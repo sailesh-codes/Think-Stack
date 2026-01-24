@@ -10,6 +10,17 @@ import { authStorage } from "./storage";
 
 const getOidcConfig = memoize(
   async () => {
+    // Mock configuration for local development
+    if (!process.env.REPL_ID) {
+      console.warn("REPL_ID not set. Using mock OIDC config for development.");
+      return {
+        issuer: "https://replit.com/oidc",
+        client_id: "mock-client-id",
+        token_endpoint: "https://replit.com/oidc/token",
+        userinfo_endpoint: "https://replit.com/oidc/userinfo",
+        authorization_endpoint: "https://replit.com/oidc/auth",
+      };
+    }
     return await client.discovery(
       new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
       process.env.REPL_ID!

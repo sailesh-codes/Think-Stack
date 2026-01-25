@@ -154,7 +154,7 @@ export default function Home() {
 
           <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-8">
             Generate AI Quizzes <br className="hidden md:block" />
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-purple-500 to-pink-500">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-blue-500 to-purple-500">
               in 60 seconds
             </span>
           </h1>
@@ -165,15 +165,24 @@ export default function Home() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button asChild size="lg" className="rounded-full px-8 text-lg h-14 shadow-lg shadow-primary/25 bg-gradient-to-r from-primary to-purple-600 hover:opacity-90">
+            <Button
+              asChild
+              size="lg"
+              className="rounded-full px-8 text-lg h-14 shadow-lg shadow-slate-900/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 hover:brightness-110 transition-all duration-200"
+            >
               <Link href="/dashboard" data-testid="button-start-generating">
                 Start Free <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
-            <Button asChild variant="outline" size="lg" className="rounded-full px-8 text-lg h-14 border-2">
-              <a href="#pricing" data-testid="button-view-pricing">
+            <Button
+              asChild
+              variant="outline"
+              size="lg"
+              className="rounded-full px-8 text-lg h-14 border border-slate-800 text-slate-900 hover:bg-slate-900 hover:text-white transition-colors duration-200"
+            >
+              <Link href="/pricing" data-testid="button-view-pricing">
                 View Pricing
-              </a>
+              </Link>
             </Button>
           </div>
 
@@ -241,23 +250,24 @@ export default function Home() {
               key={idx}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
+              whileHover={{ y: -8, scale: 1.01 }}
               viewport={{ once: true }}
-              transition={{ delay: idx * 0.2 }}
+              transition={{ delay: idx * 0.2, type: "spring", stiffness: 220, damping: 20 }}
               className="relative"
             >
-              <Card className="relative overflow-hidden border-2 hover:border-primary/50 transition-colors group">
-                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-primary/10 to-transparent" />
+              <Card className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 text-white border border-slate-800/80 shadow-xl group">
+                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-white/10 to-transparent opacity-40" />
                 <CardHeader>
                   <div className="flex items-center gap-4 mb-2">
-                    <span className="text-4xl font-bold text-primary/20">{item.step}</span>
+                    <span className="text-4xl font-bold text-blue-500">{item.step}</span>
                     <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                       <item.icon className="h-6 w-6 text-primary" />
                     </div>
                   </div>
-                  <CardTitle className="text-xl">{item.title}</CardTitle>
+                  <CardTitle className="text-xl text-white">{item.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground">{item.description}</p>
+                  <p className="text-slate-200/90">{item.description}</p>
                 </CardContent>
               </Card>
             </motion.div>
@@ -269,7 +279,7 @@ export default function Home() {
       <section className="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto bg-slate-50/50 dark:bg-slate-900/30 rounded-[3rem] mx-4 lg:mx-auto">
         <div className="grid lg:grid-cols-2 gap-16 items-center max-w-6xl mx-auto">
           <div className="order-2 lg:order-1 relative">
-            <div className="absolute inset-0 bg-gradient-to-tr from-primary to-purple-500 rounded-3xl blur-2xl opacity-20 transform rotate-3" />
+            <div className="absolute inset-0 bg-gradient-to-br from-primary to-purple-500 rounded-3xl blur-2xl opacity-20 transform rotate-3" />
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }}
               whileInView={{ opacity: 1, scale: 1 }}
@@ -287,7 +297,7 @@ export default function Home() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">Topic</label>
                   <div className="h-12 bg-slate-50 dark:bg-slate-900 border border-border rounded-xl flex items-center px-4 text-foreground">
-                    History of Ancient Rome
+                    History of AI
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -358,143 +368,23 @@ export default function Home() {
               key={idx}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
+              whileHover={{ y: -6, scale: 1.01 }}
               viewport={{ once: true }}
-              transition={{ delay: idx * 0.1 }}
+              transition={{ delay: idx * 0.1, type: "spring", stiffness: 220, damping: 22 }}
             >
-              <Card className="h-full hover:shadow-lg transition-shadow border-2 hover:border-primary/30">
+              <Card className="h-full border-0 bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-lg hover:shadow-xl transition-shadow rounded-3xl">
                 <CardHeader>
-                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary/10 to-purple-500/10 flex items-center justify-center mb-4">
+                  <div className="h-12 w-12 rounded-xl bg-white/10 flex items-center justify-center mb-4">
                     <feature.icon className="h-6 w-6 text-primary" />
                   </div>
-                  <CardTitle className="text-lg">{feature.title}</CardTitle>
+                  <CardTitle className="text-lg text-white">{feature.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground">{feature.description}</p>
+                  <p className="text-slate-200/90">{feature.description}</p>
                 </CardContent>
               </Card>
             </motion.div>
           ))}
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section id="pricing" className="py-24 px-4 sm:px-6 lg:px-8 bg-slate-50/50 dark:bg-slate-900/30">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Simple, transparent pricing</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
-              Choose the plan that fits your learning journey
-            </p>
-            
-            {/* Billing Toggle */}
-            <div className="inline-flex items-center gap-4 p-1 bg-muted rounded-full">
-              <button
-                onClick={() => setBillingCycle("monthly")}
-                className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
-                  billingCycle === "monthly" 
-                    ? "bg-white dark:bg-slate-800 shadow-sm text-foreground" 
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Monthly
-              </button>
-              <button
-                onClick={() => setBillingCycle("yearly")}
-                className={`px-6 py-2 rounded-full text-sm font-medium transition-all relative ${
-                  billingCycle === "yearly" 
-                    ? "bg-white dark:bg-slate-800 shadow-sm text-foreground" 
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Yearly
-                <span className="absolute -top-3 -right-3 px-2 py-0.5 text-xs bg-green-500 text-white rounded-full">
-                  -33%
-                </span>
-              </button>
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {pricingPlans.map((plan, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.1 }}
-                className="relative"
-              >
-                {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
-                    <span className="px-4 py-1 bg-gradient-to-r from-primary to-purple-600 text-white text-sm font-medium rounded-full shadow-lg">
-                      Most Popular
-                    </span>
-                  </div>
-                )}
-                <Card className={`h-full relative overflow-hidden ${
-                  plan.popular 
-                    ? "border-2 border-primary shadow-xl shadow-primary/10" 
-                    : "border-2 hover:border-muted-foreground/30"
-                }`}>
-                  {plan.popular && (
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary to-purple-600" />
-                  )}
-                  <CardHeader className="text-center pb-8 pt-8">
-                    <div className={`inline-flex mx-auto h-14 w-14 rounded-2xl bg-gradient-to-br ${plan.gradient} items-center justify-center mb-4`}>
-                      {plan.name === "Free" && <Sparkles className="h-7 w-7 text-white" />}
-                      {plan.name === "Pro" && <Zap className="h-7 w-7 text-white" />}
-                      {plan.name === "Team" && <Users className="h-7 w-7 text-white" />}
-                    </div>
-                    <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                    <CardDescription>{plan.description}</CardDescription>
-                    <div className="mt-6">
-                      <span className="text-4xl font-bold">
-                        {plan.currency || ""}{billingCycle === "monthly" ? plan.price.monthly : plan.price.yearly}
-                      </span>
-                      {plan.price.monthly !== "0" && (
-                        <span className="text-muted-foreground">/month</span>
-                      )}
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pb-8">
-                    <ul className="space-y-3">
-                      {plan.features.map((feature, fidx) => (
-                        <li key={fidx} className="flex items-center gap-3">
-                          {feature.included ? (
-                            <div className="h-5 w-5 rounded-full bg-green-500/10 flex items-center justify-center">
-                              <Check className="h-3 w-3 text-green-500" />
-                            </div>
-                          ) : (
-                            <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center">
-                              <X className="h-3 w-3 text-muted-foreground" />
-                            </div>
-                          )}
-                          <span className={feature.included ? "text-foreground" : "text-muted-foreground"}>
-                            {feature.text}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                  <CardFooter>
-                    <Button 
-                      asChild 
-                      className={`w-full h-12 rounded-xl ${
-                        plan.popular 
-                          ? "bg-gradient-to-r from-primary to-purple-600 hover:opacity-90" 
-                          : ""
-                      }`}
-                      variant={plan.popular ? "default" : "outline"}
-                    >
-                      <Link href={plan.href} data-testid={`button-pricing-${plan.name.toLowerCase()}`}>
-                        {plan.cta}
-                      </Link>
-                    </Button>
-                  </CardFooter>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
         </div>
       </section>
 
@@ -513,24 +403,25 @@ export default function Home() {
               key={idx}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
+              whileHover={{ y: -6, scale: 1.01 }}
               viewport={{ once: true }}
-              transition={{ delay: idx * 0.1 }}
+              transition={{ delay: idx * 0.1, type: "spring", stiffness: 220, damping: 22 }}
             >
-              <Card className="h-full border-2">
+              <Card className=" bg-gradient-to-br from-slate-900 to-slate-800 rounded-[2.5rem]  text-center text-white relative overflow-hidden">
                 <CardContent className="pt-6">
                   <div className="flex gap-1 mb-4">
                     {[...Array(5)].map((_, i) => (
                       <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                     ))}
                   </div>
-                  <p className="text-foreground mb-6 leading-relaxed">"{testimonial.content}"</p>
+                  <p className="text-foreground mb-6 leading-relaxed text-white">"{testimonial.content}"</p>
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white font-medium text-sm">
                       {testimonial.avatar}
                     </div>
                     <div>
-                      <p className="font-medium text-foreground">{testimonial.name}</p>
-                      <p className="text-sm text-muted-foreground">{testimonial.role}</p>
+                      <p className="font-medium text-foreground text-blue-500">{testimonial.name}</p>
+                      <p className="text-sm text-muted-foreground text-blue-500">{testimonial.role}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -540,34 +431,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* FAQ Section */}
-      <section id="faq" className="py-24 px-4 sm:px-6 lg:px-8 bg-slate-50/50 dark:bg-slate-900/30">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Frequently asked questions</h2>
-            <p className="text-lg text-muted-foreground">
-              Everything you need to know about Think Stack
-            </p>
-          </div>
-
-          <Accordion type="single" collapsible className="space-y-4">
-            {faqs.map((faq, idx) => (
-              <AccordionItem 
-                key={idx} 
-                value={`item-${idx}`}
-                className="bg-card border-2 rounded-xl px-6 data-[state=open]:border-primary/50"
-              >
-                <AccordionTrigger className="text-left hover:no-underline py-6" data-testid={`faq-trigger-${idx}`}>
-                  <span className="font-medium text-foreground">{faq.question}</span>
-                </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground pb-6">
-                  {faq.answer}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        </div>
-      </section>
+      {/* FAQ Section moved to dedicated /faq page */}
 
       {/* CTA Section */}
       <section className="py-24 px-4 sm:px-6 lg:px-8">
@@ -605,29 +469,7 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border/40 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-2">
-              <div className="bg-gradient-to-tr from-primary to-purple-600 p-2 rounded-lg">
-                <BrainCircuit className="h-5 w-5 text-white" />
-              </div>
-              <span className="font-bold text-lg">Think Stack</span>
-            </div>
-            <div className="flex items-center gap-6 text-sm text-muted-foreground">
-              <span>Powered by OpenAI</span>
-              <span className="h-1 w-1 rounded-full bg-muted-foreground" />
-              <span>10,000+ quizzes generated</span>
-              <span className="h-1 w-1 rounded-full bg-muted-foreground" />
-              <span>SOC 2 Compliant</span>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              © 2024 Think Stack. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </footer>
+      
     </div>
   );
 }

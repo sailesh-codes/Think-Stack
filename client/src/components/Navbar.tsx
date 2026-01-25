@@ -26,8 +26,9 @@ export function Navbar() {
 
   const navLinks = [
     { href: "/", label: "Home", isAnchor: false },
-    { href: "#pricing", label: "Pricing", isAnchor: true },
-    { href: "#faq", label: "FAQ", isAnchor: true },
+    { href: "/quiz", label: "Quiz", isAnchor: false },
+    { href: "/pricing", label: "Pricing", isAnchor: false },
+    { href: "/faq", label: "FAQ", isAnchor: false },
   ];
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
@@ -127,7 +128,11 @@ export function Navbar() {
                 </DropdownMenu>
               </div>
             ) : (
-              <Button asChild className="bg-gradient-to-r from-primary to-purple-600 hover:opacity-90 text-white shadow-lg shadow-primary/25 rounded-full px-6" data-testid="button-get-started">
+              <Button
+                asChild
+                className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 hover:brightness-110 text-white shadow-lg shadow-slate-900/40 rounded-full px-6 transition-all duration-200"
+                data-testid="button-get-started"
+              >
                 <a href="/api/login">
                   Get Started
                 </a>

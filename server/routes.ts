@@ -6,13 +6,47 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import OpenAI from "openai";
 
-// Mock OpenAI client for development
-const openai = process.env.AI_INTEGRATIONS_OPENAI_API_KEY 
+// OpenRouter-backed OpenAI-compatible client
+const openai = process.env.OPENROUTER_API_KEY
   ? new OpenAI({
-      apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-      baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      apiKey: process.env.OPENROUTER_API_KEY,
+      baseURL: process.env.OPENROUTER_API_BASE || "https://openrouter.ai/api/v1",
     })
   : null;
+
+type LLMModelConfig = {
+  name: string;
+  maxCalls: number;
+};
+
+// Basic in-memory orchestration config: adjust limits via env if desired
+const llmModels: LLMModelConfig[] = [
+  {
+    name: "openrouter/openai/gpt-4o-mini",
+    maxCalls: Number(process.env.OPENROUTER_GPT4O_MINI_LIMIT || "1000"),
+  },
+  {
+    name: "openrouter/openai/gpt-4.1-mini",
+    maxCalls: Number(process.env.OPENROUTER_GPT41_MINI_LIMIT || "1000"),
+  },
+];
+
+const llmUsage: Record<string, number> = {};
+
+function getNextModel(): string {
+  for (const { name, maxCalls } of llmModels) {
+    const used = llmUsage[name] ?? 0;
+    if (used < maxCalls) {
+      llmUsage[name] = used + 1;
+      return name;
+    }
+  }
+
+  // If all limits are reached, fall back to the last model even if over limit
+  const fallback = llmModels[llmModels.length - 1];
+  llmUsage[fallback.name] = (llmUsage[fallback.name] ?? 0) + 1;
+  return fallback.name;
+}
 
 export async function registerRoutes(
   httpServer: Server,
@@ -99,7 +133,7 @@ export async function registerRoutes(
       `;
 
       let quizData;
-      
+
       if (!openai) {
         // Mock quiz data for development without OpenAI
         quizData = {
@@ -113,10 +147,11 @@ export async function registerRoutes(
             }
           ]
         };
-        console.warn("Using mock quiz data - OpenAI not configured");
+        console.warn("Using mock quiz data - OpenRouter not configured");
       } else {
+        const model = getNextModel();
         const completion = await openai.chat.completions.create({
-          model: "gpt-5.1", // or gpt-4o-mini if 5.1 not available in integration context, but blueprint said 5.1 is latest
+          model,
           messages: [
             { role: "system", content: "You are a helpful quiz generator. Output valid JSON only." },
             { role: "user", content: prompt }

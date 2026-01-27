@@ -22,11 +22,11 @@ type LLMModelConfig = {
 // Basic in-memory orchestration config: adjust limits via env if desired
 const llmModels: LLMModelConfig[] = [
   {
-    name: "openrouter/openai/gpt-4o-mini",
+    name: "openai/gpt-4o-mini",
     maxCalls: Number(process.env.OPENROUTER_GPT4O_MINI_LIMIT || "1000"),
   },
   {
-    name: "openrouter/openai/gpt-4.1-mini",
+    name: "openai/gpt-4.1-mini",
     maxCalls: Number(process.env.OPENROUTER_GPT41_MINI_LIMIT || "1000"),
   },
 ];
@@ -123,13 +123,33 @@ export async function registerRoutes(
       }
 
       // Generate with AI
-      const prompt = `Generate a ${input.difficulty} difficulty quiz about "${input.topic}" with ${input.amount} questions.
-      Format the output as a JSON object with a "title" string and a "questions" array.
-      Each question object should have:
-      - "questionText" (string)
-      - "options" (array of 4 strings)
-      - "correctAnswer" (string, must match one of the options)
-      - "explanation" (string, brief explanation of why it's correct)
+      const prompt = `You are a quiz generator.
+
+      Create a ${input.difficulty} difficulty multiple-choice quiz on the topic "${input.topic}".
+      The quiz must have EXACTLY ${input.amount} questions.
+
+      Return ONLY valid JSON in the following shape (no extra text, no markdown):
+      {
+        "title": string,
+        "questions": [
+          {
+            "questionText": string,
+            "options": [string, string, string, string],
+            "correctAnswer": string,
+            "explanation": string
+          },
+          ...
+        ]
+      }
+
+      Rules:
+      - "options" must contain exactly 4 answer choices.
+      - "correctAnswer" must be EXACTLY one of the strings in "options".
+      - "explanation" must clearly explain:
+        - why the correct answer is correct, and
+        - why each of the other options is incorrect.
+      - Do not include any keys other than the ones specified above.
+      - Do not include any commentary outside the JSON.
       `;
 
       let quizData;
@@ -180,7 +200,7 @@ export async function registerRoutes(
 
       res.status(201).json(quiz);
 
-    } catch (err) {
+    } catch (err: any) {
       console.error("Quiz generation error:", err);
       if (err instanceof z.ZodError) {
         return res.status(400).json({
@@ -188,7 +208,8 @@ export async function registerRoutes(
           field: err.errors[0].path.join('.'),
         });
       }
-      res.status(500).json({ message: "Failed to generate quiz" });
+      const message = typeof err?.message === "string" ? err.message : "Failed to generate quiz";
+      res.status(500).json({ message });
     }
   });
 

@@ -290,7 +290,7 @@ export default function Home() {
                 <div className="w-3 h-3 rounded-full bg-red-500" />
                 <div className="w-3 h-3 rounded-full bg-yellow-500" />
                 <div className="w-3 h-3 rounded-full bg-green-500" />
-                <span className="text-sm text-muted-foreground ml-auto font-mono">think-stack.ai</span>
+                <span className="text-sm text-muted-foreground ml-auto font-mono"></span>
               </div>
               
               <div className="space-y-4">

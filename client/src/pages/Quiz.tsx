@@ -16,12 +16,29 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { generateQuizSchema } from "@shared/schema";
 import { motion } from "framer-motion";
+import { useAuth } from "@/hooks/use-auth";
 
 type GenerateFormValues = z.infer<typeof generateQuizSchema>;
 
 export default function Quiz() {
+  const { user, isLoading } = useAuth();
   const generateQuiz = useGenerateQuiz();
   const { data: userData } = useUserUsage();
+
+  // Redirect to login if not authenticated
+  if (!isLoading && !user) {
+    window.location.href = "/login";
+    return null;
+  }
+
+  // Show loading while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   const form = useForm<GenerateFormValues>({
     resolver: zodResolver(generateQuizSchema),

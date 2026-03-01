@@ -10,7 +10,7 @@ import { getDatabase } from "../../db";
 import { authStorage } from "./storage";
 
 const getOidcConfig = memoize(
-  async () => {
+  async (): Promise<client.Configuration> => {
     // Mock configuration for local development
     if (!process.env.REPL_ID) {
       console.warn("REPL_ID not set. Using mock OIDC config for development.");
@@ -20,7 +20,7 @@ const getOidcConfig = memoize(
         token_endpoint: "https://replit.com/oidc/token",
         userinfo_endpoint: "https://replit.com/oidc/userinfo",
         authorization_endpoint: "https://replit.com/oidc/auth",
-      };
+      } as unknown as client.Configuration;
     }
     return await client.discovery(
       new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),

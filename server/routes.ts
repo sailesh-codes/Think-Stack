@@ -1,10 +1,25 @@
 import type { Express } from "express";
 import type { Server } from "http";
-import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
+import { getSession, setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
+import { setupGoogleAuth } from "./auth/googleAuth";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import OpenAI from "openai";
+import passport from "passport";
+
+// Admin emails for unlimited quizzes and admin dashboard access
+const ADMIN_EMAILS = new Set(
+  (process.env.ADMIN_EMAILS || "codecraft2k@gmail.com,thinkstack.ai.cc@gmail.com")
+    .split(",")
+    .map(e => e.trim().toLowerCase())
+);
+
+// Helper to check if authenticated user is admin
+function isAdmin(req: any): boolean {
+  const email = req.user?.claims?.email || req.user?.email;
+  return email ? ADMIN_EMAILS.has(email.toLowerCase()) : false;
+}
 
 // OpenRouter-backed OpenAI-compatible client
 const openai = process.env.OPENROUTER_API_KEY
@@ -61,24 +76,127 @@ export async function registerRoutes(
     registerAuthRoutes(app);
   }
 
-  // Protected middleware - bypass when Replit auth is not configured
-  const requireAuth = (req: any, res: any, next: any) => {
+  // Setup Google OAuth if credentials are provided
+  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    console.log("Setting up Google OAuth authentication...");
+
+    // If Replit auth isn't configured, we still must initialize session + passport
+    // so that req.isAuthenticated(), req.user, and session persistence work for Google OAuth.
     if (!process.env.REPL_ID) {
-      // Mock user when Replit auth is not configured (local/dev)
-      req.user = {
-        claims: {
-          sub: "mock-user-id",
-          email: "mock@example.com",
-          name: "Mock User",
-        },
-      };
-      return next();
+      app.set("trust proxy", 1);
+      app.use(getSession());
+      app.use(passport.initialize());
+      app.use(passport.session());
     }
-    if (req.isAuthenticated()) {
-      return next();
+
+    setupGoogleAuth();
+  }
+
+  // Protected middleware - require auth when configured
+  const requireAuth = (req: any, res: any, next: any) => {
+    const acceptsHtml =
+      typeof req.headers?.accept === "string" &&
+      req.headers.accept.includes("text/html");
+
+    // If Google OAuth is configured, require authentication
+    if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+      if (typeof req.isAuthenticated === "function" && req.isAuthenticated()) {
+        // Normalize Google user objects into the shape expected by the rest of the server
+        // (Replit auth stores user info under req.user.claims).
+        if (req.user && !req.user.claims) {
+          req.user.claims = {
+            sub: req.user.id,
+            email: req.user.email,
+            first_name: req.user.firstName,
+            last_name: req.user.lastName,
+            profile_image_url: req.user.profileImageUrl,
+          };
+        }
+        return next();
+      }
+      if (req.method === "GET" && acceptsHtml) {
+        return res.redirect("/login");
+      }
+      return res
+        .status(401)
+        .json({ message: "Authentication required. Please login with Google." });
     }
-    res.status(401).json({ message: "Unauthorized" });
+
+    // If Replit auth is configured, require authentication
+    if (process.env.REPL_ID) {
+      if (req.isAuthenticated()) {
+        return next();
+      }
+      if (req.method === "GET" && acceptsHtml) {
+        return res.redirect("/login");
+      }
+      return res
+        .status(401)
+        .json({ message: "Authentication required. Please login with Replit." });
+    }
+
+    // No auth configured (development mode), allow with mock user
+    req.user = {
+      claims: {
+        sub: "mock-user-id",
+        email: "mock@example.com",
+        name: "Mock User",
+      },
+    };
+    return next();
   };
+
+  // Google OAuth Routes
+  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    app.get("/auth/google",
+      passport.authenticate("google", { scope: ["profile", "email"] })
+    );
+
+    app.get("/auth/google/callback", (req, res, next) => {
+      passport.authenticate(
+        "google",
+        { failureRedirect: "/login" },
+        (err: any, user: any) => {
+          if (err) {
+            console.error("Google OAuth callback error:", err);
+            return res.status(500).json({
+              message:
+                err instanceof Error
+                  ? err.message
+                  : "Google OAuth callback failed",
+            });
+          }
+          if (!user) {
+            return res.redirect("/login");
+          }
+          req.logIn(user, (loginErr) => {
+            if (loginErr) {
+              console.error("Google OAuth req.logIn error:", loginErr);
+              return res.status(500).json({
+                message:
+                  loginErr instanceof Error
+                    ? loginErr.message
+                    : "Login session setup failed",
+              });
+            }
+            if (req.session) {
+              return req.session.save(() => res.redirect("/"));
+            }
+            return res.redirect("/");
+          });
+        }
+      )(req, res, next);
+    });
+
+    app.post("/auth/logout", (req, res) => {
+      req.logout((err) => {
+        if (err) {
+          return res.status(500).json({ message: "Logout failed" });
+        }
+        res.json({ message: "Logged out successfully" });
+      });
+    });
+  }
 
   // Get current user + usage (Replit-style API used by server-side code)
   app.get(api.auth.me.path, requireAuth, async (req: any, res) => {
@@ -90,8 +208,16 @@ export async function registerRoutes(
   });
 
   // Frontend auth hook expects /api/auth/user to return just the User object
-  if (!process.env.REPL_ID) {
-    // Local/dev: return a static mock user so the UI can load without real auth
+  if (
+    process.env.GOOGLE_CLIENT_ID &&
+    process.env.GOOGLE_CLIENT_SECRET
+  ) {
+    // Google OAuth configured: require auth so the client can accurately know login state
+    app.get("/api/auth/user", requireAuth, (req: any, res) => {
+      res.json(req.user.claims);
+    });
+  } else if (!process.env.REPL_ID) {
+    // Local/dev without any real auth configured: return a static mock user so the UI can load
     app.get("/api/auth/user", (_req, res) => {
       res.json({
         id: "mock-user-id",
@@ -110,17 +236,148 @@ export async function registerRoutes(
     });
   }
 
+  // Admin-only routes
+  app.get("/api/admin/summary", requireAuth, async (req: any, res) => {
+    console.log('Admin summary request from user:', req.user?.claims?.email);
+    if (!isAdmin(req)) {
+      console.log('Admin access denied for user:', req.user?.claims?.email);
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      console.log('Fetching admin summary...');
+      const db = await (await import("./db")).getDatabase();
+      const usersCollection = db.collection('users');
+      const quizzesCollection = db.collection('quizzes');
+      const userUsageCollection = db.collection('userUsage');
+
+      const now = new Date();
+      const todayStart = new Date(now);
+      todayStart.setHours(0, 0, 0, 0);
+      const weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - now.getDay());
+      weekStart.setHours(0, 0, 0, 0);
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const yearStart = new Date(now.getFullYear(), 0, 1);
+
+      const [totalUsers, totalQuizzes, totalUsage] = await Promise.all([
+        usersCollection.countDocuments(),
+        quizzesCollection.countDocuments(),
+        userUsageCollection.aggregate([
+          { $group: { _id: null, total: { $sum: "$quizzesGenerated" } } }
+        ]).toArray()
+      ]);
+
+      const quizzesGeneratedToday = await quizzesCollection.countDocuments({
+        createdAt: { $gte: todayStart }
+      });
+
+      // Login statistics based on user creation/last login timestamps
+      const [
+        loginsToday,
+        loginsThisWeek,
+        loginsThisMonth,
+        loginsThisYear,
+        newUsersToday,
+        newUsersThisWeek,
+        newUsersThisMonth,
+        newUsersThisYear
+      ] = await Promise.all([
+        // Users who logged in today (using updatedAt as proxy for last login)
+        usersCollection.countDocuments({ updatedAt: { $gte: todayStart } }),
+        // Users who logged in this week
+        usersCollection.countDocuments({ updatedAt: { $gte: weekStart } }),
+        // Users who logged in this month
+        usersCollection.countDocuments({ updatedAt: { $gte: monthStart } }),
+        // Users who logged in this year
+        usersCollection.countDocuments({ updatedAt: { $gte: yearStart } }),
+        // New users today
+        usersCollection.countDocuments({ createdAt: { $gte: todayStart } }),
+        // New users this week
+        usersCollection.countDocuments({ createdAt: { $gte: weekStart } }),
+        // New users this month
+        usersCollection.countDocuments({ createdAt: { $gte: monthStart } }),
+        // New users this year
+        usersCollection.countDocuments({ createdAt: { $gte: yearStart } })
+      ]);
+
+      const result = {
+        totalUsers,
+        totalQuizzes,
+        quizzesGeneratedToday,
+        totalQuizzesGenerated: totalUsage[0]?.total || 0,
+        loginStats: {
+          today: loginsToday,
+          thisWeek: loginsThisWeek,
+          thisMonth: loginsThisMonth,
+          thisYear: loginsThisYear,
+        },
+        newUserStats: {
+          today: newUsersToday,
+          thisWeek: newUsersThisWeek,
+          thisMonth: newUsersThisMonth,
+          thisYear: newUsersThisYear,
+        }
+      };
+
+      console.log('Admin summary result:', result);
+      res.json(result);
+    } catch (error) {
+      console.error("Admin summary error:", error);
+      res.status(500).json({ message: "Failed to fetch admin summary" });
+    }
+  });
+
+// ...
+  app.get("/api/admin/quizzes", requireAuth, async (req: any, res) => {
+    if (!isAdmin(req)) {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const db = await (await import("./db")).getDatabase();
+      const quizzesCollection = db.collection('quizzes');
+      
+      const quizzes = await quizzesCollection
+        .find({})
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .toArray();
+
+      res.json(quizzes);
+    } catch (error) {
+      console.error("Admin quizzes error:", error);
+      res.status(500).json({ message: "Failed to fetch quizzes" });
+    }
+  });
+
+  app.delete("/api/admin/quizzes/:id", requireAuth, async (req: any, res) => {
+    if (!isAdmin(req)) {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const { id } = req.params;
+      await storage.deleteQuiz(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Admin delete quiz error:", error);
+      res.status(500).json({ message: "Failed to delete quiz" });
+    }
+  });
+
   // Generate Quiz
   app.post(api.quizzes.generate.path, requireAuth, async (req: any, res) => {
     try {
       const input = api.quizzes.generate.input.parse(req.body);
       const userId = req.user.claims.sub;
 
-      // Check credits (skip in development mode)
+      // Check credits (skip in development mode or for admins)
       const usage = await storage.getUserUsage(userId);
       const isDevelopment = process.env.NODE_ENV === 'development';
+      const userIsAdmin = isAdmin(req);
       
-      if (!isDevelopment && !usage.isPro && usage.quizzesGenerated >= 5) {
+      if (!isDevelopment && !userIsAdmin && !usage.isPro && usage.quizzesGenerated >= 5) {
         return res.status(402).json({ message: "Free limit reached. Please upgrade to Pro." });
       }
 

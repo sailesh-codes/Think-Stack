@@ -99,11 +99,11 @@ export class DatabaseStorage implements IStorage {
       { upsert: true, returnDocument: 'after' }
     );
     
-    if (!result.value) {
+    if (!result || !result.value) {
       throw new Error('Failed to set user pro status');
     }
     
-    return result.value! as unknown as UserUsage;
+    return result.value as unknown as UserUsage;
   }
 
   async createQuiz(quiz: InsertQuiz & { userId: string }): Promise<Quiz> {

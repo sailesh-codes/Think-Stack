@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserUsage } from "@/hooks/use-quizzes";
-import { Sparkles, BrainCircuit, LogOut, User, Menu, X } from "lucide-react";
+import { Sparkles, BrainCircuit, LogOut, User, Menu, X, Shield } from "lucide-react";
 import { useState } from "react";
 import {
   DropdownMenu,
@@ -14,6 +14,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
+// Admin emails for client-side admin UI visibility
+const ADMIN_EMAILS = new Set([
+  "codecraft2k@gmail.com",
+  "thinkstack.ai.cc@gmail.com",
+]);
+
 export function Navbar() {
   const [location] = useLocation();
   const { user, logout, isAuthenticated } = useAuth();
@@ -23,12 +29,14 @@ export function Navbar() {
   const isPro = userData?.usage?.isPro;
   const creditsUsed = userData?.usage?.quizzesGenerated || 0;
   const creditLimit = 5;
+  const isAdmin = user?.email ? ADMIN_EMAILS.has(user.email.toLowerCase()) : false;
 
   const navLinks = [
     { href: "/", label: "Home", isAnchor: false },
     { href: "/quiz", label: "Quiz", isAnchor: false },
     { href: "/pricing", label: "Pricing", isAnchor: false },
     { href: "/faq", label: "FAQ", isAnchor: false },
+    ...(isAdmin ? [{ href: "/admin", label: "Admin", isAnchor: false }] : []),
   ];
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
@@ -84,7 +92,7 @@ export function Navbar() {
           </div>
 
           <div className="flex items-center gap-4">
-            {isAuthenticated ? (
+            {user ? (
               <div className="flex items-center gap-4">
                 <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-primary/10 to-purple-500/10 border border-primary/20">
                   <Sparkles className="h-4 w-4 text-primary" />
@@ -117,25 +125,22 @@ export function Navbar() {
                     <DropdownMenuItem asChild>
                       <Link href="/dashboard" className="cursor-pointer" data-testid="menu-dashboard">
                         <User className="mr-2 h-4 w-4" />
-                        <span>Dashboard</span>
+                        Dashboard
                       </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => logout()} className="cursor-pointer text-red-500 focus:text-red-500" data-testid="menu-logout">
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => logout()} className="cursor-pointer text-red-600 focus:text-red-600" data-testid="menu-logout">
                       <LogOut className="mr-2 h-4 w-4" />
-                      <span>Log out</span>
+                      Log out
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
             ) : (
-              <Button
-                asChild
-                className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 hover:brightness-110 text-white shadow-lg shadow-slate-900/40 rounded-full px-6 transition-all duration-200"
-                data-testid="button-get-started"
-              >
-                <a href="/api/login">
-                  Get Started
-                </a>
+              <Button asChild className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90">
+                <Link href="/login" data-testid="button-login">
+                  Sign Up
+                </Link>
               </Button>
             )}
 

@@ -12,12 +12,23 @@ import Pricing from "@/pages/Pricing";
 import FAQ from "@/pages/FAQ";
 import Quiz from "@/pages/Quiz";
 import QuizPlayer from "@/pages/QuizPlayer";
+import Admin from "@/pages/Admin";
+import Login from "@/pages/Login";
 import NotFound from "@/pages/not-found";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 
+const ADMIN_EMAILS = new Set([
+  "codecraft2k@gmail.com",
+  "thinkstack.ai.cc@gmail.com",
+]);
+
 function Router() {
-  const { isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
+
+  const isAdmin = user?.email
+    ? ADMIN_EMAILS.has(user.email.toLowerCase())
+    : false;
 
   if (isLoading) {
     return (
@@ -36,9 +47,19 @@ function Router() {
           <Route path="/features" component={Features} />
           <Route path="/pricing" component={Pricing} />
           <Route path="/faq" component={FAQ} />
-          <Route path="/quiz" component={Quiz} />
-          <Route path="/dashboard" component={Dashboard} />
-          <Route path="/quiz/:id" component={QuizPlayer} />
+          <Route path="/login" component={Login} />
+          <Route path="/quiz">
+            {user ? <Quiz /> : <Login />}
+          </Route>
+          <Route path="/dashboard">
+            {user ? <Dashboard /> : <Login />}
+          </Route>
+          <Route path="/quiz/:id">
+            {user ? <QuizPlayer /> : <Login />}
+          </Route>
+          <Route path="/admin">
+            {user ? (isAdmin ? <Admin /> : <NotFound />) : <Login />}
+          </Route>
           <Route component={NotFound} />
         </Switch>
       </main>

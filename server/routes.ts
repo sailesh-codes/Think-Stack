@@ -116,9 +116,11 @@ export async function registerRoutes(
       const input = api.quizzes.generate.input.parse(req.body);
       const userId = req.user.claims.sub;
 
-      // Check credits
+      // Check credits (skip in development mode)
       const usage = await storage.getUserUsage(userId);
-      if (!usage.isPro && usage.quizzesGenerated >= 5) {
+      const isDevelopment = process.env.NODE_ENV === 'development';
+      
+      if (!isDevelopment && !usage.isPro && usage.quizzesGenerated >= 5) {
         return res.status(402).json({ message: "Free limit reached. Please upgrade to Pro." });
       }
 
@@ -221,7 +223,7 @@ export async function registerRoutes(
 
   // Get Quiz
   app.get(api.quizzes.get.path, requireAuth, async (req: any, res) => {
-    const quiz = await storage.getQuiz(Number(req.params.id));
+    const quiz = await storage.getQuiz(req.params.id);
     if (!quiz) return res.status(404).json({ message: "Quiz not found" });
     
     // Authorization check
@@ -234,14 +236,14 @@ export async function registerRoutes(
 
   // Delete Quiz
   app.delete(api.quizzes.delete.path, requireAuth, async (req: any, res) => {
-    const quiz = await storage.getQuiz(Number(req.params.id));
+    const quiz = await storage.getQuiz(req.params.id);
     if (!quiz) return res.status(404).json({ message: "Quiz not found" });
 
     if (quiz.userId !== req.user.claims.sub) {
       return res.status(403).json({ message: "Forbidden" });
     }
 
-    await storage.deleteQuiz(Number(req.params.id));
+    await storage.deleteQuiz(req.params.id);
     res.status(204).send();
   });
 

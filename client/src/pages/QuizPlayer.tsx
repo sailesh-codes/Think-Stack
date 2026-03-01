@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export default function QuizPlayer() {
   const [, params] = useRoute("/quiz/:id");
-  const quizId = parseInt(params?.id || "0");
+  const quizId = params?.id || "";
   const { data: quiz, isLoading } = useQuiz(quizId);
   
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -50,7 +50,9 @@ export default function QuizPlayer() {
     setSelectedOption(option);
     setIsAnswered(true);
     
-    if (option === currentQuestion.answer) {
+    // Handle both field names: answer or correctAnswer
+    const correctAnswer = currentQuestion.answer || currentQuestion.correctAnswer;
+    if (option === correctAnswer) {
       setScore(s => s + 1);
     }
   };
@@ -121,13 +123,14 @@ export default function QuizPlayer() {
             transition={{ duration: 0.3 }}
           >
             <h2 className="text-2xl md:text-3xl font-bold mb-8 leading-tight">
-              {currentQuestion.question}
+              {currentQuestion.question || currentQuestion.questionText}
             </h2>
 
             <div className="space-y-4">
               {currentQuestion.options.map((option: string, idx: number) => {
                 const isSelected = selectedOption === option;
-                const isCorrect = option === currentQuestion.answer;
+                const correctAnswer = currentQuestion.answer || currentQuestion.correctAnswer;
+                const isCorrect = option === correctAnswer;
                 
                 let variant = "outline";
                 let className = "w-full justify-start text-left p-6 h-auto text-lg hover:border-primary/50 transition-all";

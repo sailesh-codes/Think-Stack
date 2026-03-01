@@ -1,14 +1,3 @@
-import { defineConfig } from "drizzle-kit";
-
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL, ensure the database is provisioned");
-}
-
-export default defineConfig({
-  out: "./migrations",
-  schema: "./shared/schema.ts",
-  dialect: "postgresql",
-  dbCredentials: {
-    url: process.env.DATABASE_URL,
-  },
-});
+// This file is no longer needed for MongoDB
+// MongoDB doesn't require migration configuration like Drizzle/PostgreSQL
+// The database schema is defined in TypeScript interfaces in shared/schema.ts

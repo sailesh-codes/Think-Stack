@@ -1,14 +1,39 @@
-import { drizzle } from "drizzle-orm/node-postgres";
-import pg from "pg";
+import { MongoClient, Db } from "mongodb";
 import * as schema from "@shared/schema";
 
-const { Pool } = pg;
+// Load dotenv if not already loaded
+import { config } from "dotenv";
+config();
 
 if (!process.env.DATABASE_URL) {
   console.warn("DATABASE_URL not set. Using mock database for development.");
   // For development without database, we'll use a mock
-  process.env.DATABASE_URL = "postgresql://mock:mock@localhost:5432/mock";
+  process.env.DATABASE_URL = "mongodb://localhost:27017/thinkstack";
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-export const db = drizzle(pool, { schema });
+let client: MongoClient;
+let db: Db;
+
+export async function connectToDatabase() {
+  if (client) {
+    return { client, db };
+  }
+
+  client = new MongoClient(process.env.DATABASE_URL!);
+  await client.connect();
+  db = client.db();
+  
+  return { client, db };
+}
+
+export async function getDatabase() {
+  if (!db) {
+    await connectToDatabase();
+  }
+  return db;
+}
+
+// Export a simple db object for compatibility
+export const database = {
+  collection: (name: string) => getDatabase().then(db => db.collection(name))
+};

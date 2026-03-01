@@ -1,48 +1,62 @@
-import { pgTable, serial, text, boolean, timestamp, jsonb, integer } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { relations } from "drizzle-orm";
-import { users } from "./models/auth";
 
-export * from "./models/auth";
-export * from "./models/chat";
+// MongoDB Collections (we'll use TypeScript interfaces for type safety)
 
-// Extend users with relations (optional, but good for query builder)
-export const usersRelations = relations(users, ({ many }) => ({
-  quizzes: many(quizzes),
-}));
+export interface User {
+  _id?: string;
+  id: string;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  profileImageUrl?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
 
-export const quizzes = pgTable("quizzes", {
-  id: serial("id").primaryKey(),
-  userId: text("user_id").notNull(), // References users.id (which is varchar from auth)
-  topic: text("topic").notNull(),
-  difficulty: text("difficulty").notNull(), // 'easy' | 'medium' | 'hard'
-  title: text("title").notNull(),
-  questions: jsonb("questions").notNull(), // Array of { question, options[], answer, explanation }
-  isPublic: boolean("is_public").default(false).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+export interface Session {
+  _id?: string;
+  sid: string;
+  sess: any;
+  expire: Date;
+}
 
-export const quizzesRelations = relations(quizzes, ({ one }) => ({
-  user: one(users, {
-    fields: [quizzes.userId],
-    references: [users.id],
-  }),
-}));
+export interface Quiz {
+  _id?: string;
+  id: string;
+  userId: string;
+  topic: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  title: string;
+  questions: Array<{
+    question: string;
+    options: string[];
+    answer: string;
+    explanation: string;
+  }>;
+  isPublic: boolean;
+  createdAt: Date;
+}
 
-// User usage tracking for credits
-export const userUsage = pgTable("user_usage", {
-  id: serial("id").primaryKey(),
-  userId: text("user_id").notNull().unique(), // One record per user
-  quizzesGenerated: integer("quizzes_generated").default(0).notNull(),
-  isPro: boolean("is_pro").default(false).notNull(),
-});
+export interface UserUsage {
+  _id?: string;
+  id: string;
+  userId: string;
+  quizzesGenerated: number;
+  isPro: boolean;
+}
 
-// Zod Schemas
-export const insertQuizSchema = createInsertSchema(quizzes).omit({ 
-  id: true, 
-  createdAt: true, 
-  userId: true 
+// Zod Schemas for validation
+export const insertQuizSchema = z.object({
+  topic: z.string().min(1, "Topic is required"),
+  difficulty: z.enum(["easy", "medium", "hard"]),
+  title: z.string().min(1, "Title is required"),
+  questions: z.array(z.object({
+    question: z.string(),
+    options: z.array(z.string()),
+    answer: z.string(),
+    explanation: z.string()
+  })),
+  isPublic: z.boolean().default(false)
 });
 
 export const generateQuizSchema = z.object({
@@ -51,7 +65,15 @@ export const generateQuizSchema = z.object({
   amount: z.number().min(1).max(10).default(5),
 });
 
+export const upsertUserSchema = z.object({
+  id: z.string(),
+  email: z.string().email().optional(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  profileImageUrl: z.string().url().optional(),
+});
+
 // Types
-export type Quiz = typeof quizzes.$inferSelect;
 export type InsertQuiz = z.infer<typeof insertQuizSchema>;
-export type UserUsage = typeof userUsage.$inferSelect;
+export type GenerateQuiz = z.infer<typeof generateQuizSchema>;
+export type UpsertUser = z.infer<typeof upsertUserSchema>;

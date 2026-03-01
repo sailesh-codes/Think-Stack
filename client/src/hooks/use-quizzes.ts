@@ -20,7 +20,7 @@ export function useQuizzes() {
   });
 }
 
-export function useQuiz(id: number) {
+export function useQuiz(id: string) {
   return useQuery({
     queryKey: [api.quizzes.get.path, id],
     queryFn: async () => {
@@ -85,7 +85,7 @@ export function useDeleteQuiz() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (id: number) => {
+    mutationFn: async (id: string) => {
       const url = buildUrl(api.quizzes.delete.path, { id });
       const res = await fetch(url, {
         method: api.quizzes.delete.method,

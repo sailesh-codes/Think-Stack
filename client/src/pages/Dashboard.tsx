@@ -57,7 +57,8 @@ export default function Dashboard() {
   // Determine if user can generate more quizzes
   const isPro = userData?.usage?.isPro;
   const creditsUsed = userData?.usage?.quizzesGenerated || 0;
-  const hasCredits = isPro || creditsUsed < 5;
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  const hasCredits = isDevelopment || isPro || creditsUsed < 5;
 
   return (
     <div className="min-h-screen pt-24 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">

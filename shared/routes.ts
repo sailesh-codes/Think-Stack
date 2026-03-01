@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { insertQuizSchema, quizzes, generateQuizSchema, userUsage } from "./schema";
+import { insertQuizSchema, generateQuizSchema, type Quiz, type UserUsage } from "./schema";
 
 export const errorSchemas = {
   validation: z.object({
@@ -28,7 +28,7 @@ export const api = {
       responses: {
         200: z.object({
           user: z.any(), // Type from auth model
-          usage: z.custom<typeof userUsage.$inferSelect>(),
+          usage: z.custom<UserUsage>(),
         }),
         401: errorSchemas.unauthorized,
       },
@@ -40,7 +40,7 @@ export const api = {
       path: "/api/quizzes/generate",
       input: generateQuizSchema,
       responses: {
-        201: z.custom<typeof quizzes.$inferSelect>(),
+        201: z.custom<Quiz>(),
         400: errorSchemas.validation,
         402: errorSchemas.paymentRequired, // Credits exceeded
         500: errorSchemas.internal,
@@ -50,14 +50,14 @@ export const api = {
       method: "GET" as const,
       path: "/api/quizzes",
       responses: {
-        200: z.array(z.custom<typeof quizzes.$inferSelect>()),
+        200: z.array(z.custom<Quiz>()),
       },
     },
     get: {
       method: "GET" as const,
       path: "/api/quizzes/:id",
       responses: {
-        200: z.custom<typeof quizzes.$inferSelect>(),
+        200: z.custom<Quiz>(),
         404: errorSchemas.notFound,
       },
     },

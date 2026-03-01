@@ -1,3 +1,12 @@
+// Load environment variables FIRST before any other imports
+import { config } from "dotenv";
+config();
+
+// Ensure NODE_ENV is set to development for local development
+if (!process.env.NODE_ENV) {
+  process.env.NODE_ENV = 'development';
+}
+
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";

@@ -1,42 +1,85 @@
-import { db } from "../../db";
-import { conversations, messages } from "@shared/schema";
-import { eq, desc } from "drizzle-orm";
+import { getDatabase } from "../../db";
+import { type Conversation, type Message } from "@shared/models/chat";
+import { ObjectId } from "mongodb";
 
 export interface IChatStorage {
-  getConversation(id: number): Promise<typeof conversations.$inferSelect | undefined>;
-  getAllConversations(): Promise<(typeof conversations.$inferSelect)[]>;
-  createConversation(title: string): Promise<typeof conversations.$inferSelect>;
-  deleteConversation(id: number): Promise<void>;
-  getMessagesByConversation(conversationId: number): Promise<(typeof messages.$inferSelect)[]>;
-  createMessage(conversationId: number, role: string, content: string): Promise<typeof messages.$inferSelect>;
+  getConversation(id: string): Promise<Conversation | undefined>;
+  getAllConversations(): Promise<Conversation[]>;
+  createConversation(title: string): Promise<Conversation>;
+  deleteConversation(id: string): Promise<void>;
+  getMessagesByConversation(conversationId: string): Promise<Message[]>;
+  createMessage(conversationId: string, role: string, content: string): Promise<Message>;
 }
 
 export const chatStorage: IChatStorage = {
-  async getConversation(id: number) {
-    const [conversation] = await db.select().from(conversations).where(eq(conversations.id, id));
-    return conversation;
+  async getConversation(id: string) {
+    const db = await getDatabase();
+    const collection = db.collection('conversations');
+    
+    const conversationDoc = await collection.findOne({ id });
+    return conversationDoc ? (conversationDoc as unknown as Conversation) : undefined;
   },
 
   async getAllConversations() {
-    return db.select().from(conversations).orderBy(desc(conversations.createdAt));
+    const db = await getDatabase();
+    const collection = db.collection('conversations');
+    
+    const conversations = await collection
+      .find({})
+      .sort({ createdAt: -1 })
+      .toArray();
+    
+    return conversations as unknown as Conversation[];
   },
 
   async createConversation(title: string) {
-    const [conversation] = await db.insert(conversations).values({ title }).returning();
+    const db = await getDatabase();
+    const collection = db.collection('conversations');
+    
+    const conversation: Conversation = {
+      id: new ObjectId().toString(),
+      title,
+      createdAt: new Date()
+    };
+    
+    await collection.insertOne(conversation as any);
     return conversation;
   },
 
-  async deleteConversation(id: number) {
-    await db.delete(messages).where(eq(messages.conversationId, id));
-    await db.delete(conversations).where(eq(conversations.id, id));
+  async deleteConversation(id: string) {
+    const db = await getDatabase();
+    const messagesCollection = db.collection('messages');
+    const conversationsCollection = db.collection('conversations');
+    
+    await messagesCollection.deleteMany({ conversationId: id });
+    await conversationsCollection.deleteOne({ id });
   },
 
-  async getMessagesByConversation(conversationId: number) {
-    return db.select().from(messages).where(eq(messages.conversationId, conversationId)).orderBy(messages.createdAt);
+  async getMessagesByConversation(conversationId: string) {
+    const db = await getDatabase();
+    const collection = db.collection('messages');
+    
+    const messages = await collection
+      .find({ conversationId })
+      .sort({ createdAt: 1 })
+      .toArray();
+    
+    return messages as unknown as Message[];
   },
 
-  async createMessage(conversationId: number, role: string, content: string) {
-    const [message] = await db.insert(messages).values({ conversationId, role, content }).returning();
+  async createMessage(conversationId: string, role: string, content: string) {
+    const db = await getDatabase();
+    const collection = db.collection('messages');
+    
+    const message: Message = {
+      id: new ObjectId().toString(),
+      conversationId,
+      role: role as 'user' | 'assistant' | 'system',
+      content,
+      createdAt: new Date()
+    };
+    
+    await collection.insertOne(message as any);
     return message;
   },
 };

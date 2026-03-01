@@ -1,6 +1,6 @@
-import { users, type User, type UpsertUser } from "@shared/models/auth";
-import { db } from "../../db";
-import { eq } from "drizzle-orm";
+import { getDatabase } from "../../db";
+import { type User, type UpsertUser } from "@shared/models/auth";
+import { ObjectId } from "mongodb";
 
 // Interface for auth storage operations
 // (IMPORTANT) These user operations are mandatory for Replit Auth.
@@ -11,23 +11,34 @@ export interface IAuthStorage {
 
 class AuthStorage implements IAuthStorage {
   async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+    const db = await getDatabase();
+    const collection = db.collection('users');
+    
+    const userDoc = await collection.findOne({ id });
+    return userDoc ? (userDoc as unknown as User) : undefined;
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(userData)
-      .onConflictDoUpdate({
-        target: users.id,
-        set: {
+    const db = await getDatabase();
+    const collection = db.collection('users');
+    
+    const result = await collection.findOneAndUpdate(
+      { id: userData.id },
+      { 
+        $set: {
           ...userData,
           updatedAt: new Date(),
-        },
-      })
-      .returning();
-    return user;
+          createdAt: new Date() // Always set createdAt for new records
+        }
+      },
+      { upsert: true, returnDocument: 'after' }
+    );
+    
+    if (!result.value) {
+      throw new Error('Failed to upsert user');
+    }
+    
+    return result.value! as unknown as User;
   }
 }
 

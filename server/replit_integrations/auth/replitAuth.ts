@@ -5,7 +5,8 @@ import passport from "passport";
 import session from "express-session";
 import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
-import connectPg from "connect-pg-simple";
+import MongoStore from "connect-mongo";
+import { getDatabase } from "../../db";
 import { authStorage } from "./storage";
 
 const getOidcConfig = memoize(
@@ -31,22 +32,23 @@ const getOidcConfig = memoize(
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
-  const pgStore = connectPg(session);
-  const sessionStore = new pgStore({
-    conString: process.env.DATABASE_URL,
-    createTableIfMissing: false,
+  const mongoStore = MongoStore.create({
+    mongoUrl: process.env.DATABASE_URL,
+    collectionName: 'sessions',
     ttl: sessionTtl,
-    tableName: "sessions",
+    autoRemove: 'native',
   });
+  
   return session({
-    secret: process.env.SESSION_SECRET!,
-    store: sessionStore,
+    store: mongoStore,
+    secret: process.env.SESSION_SECRET || "your-secret-key",
     resave: false,
     saveUninitialized: false,
     cookie: {
-      httpOnly: true,
-      secure: true,
       maxAge: sessionTtl,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
     },
   });
 }

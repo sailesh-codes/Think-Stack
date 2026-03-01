@@ -34,8 +34,9 @@ export default function Quiz() {
 
   const onSubmit = (data: GenerateFormValues) => {
     generateQuiz.mutate(data, {
-      onSuccess: () => {
-        form.reset({ ...data, topic: "" });
+      onSuccess: (quiz) => {
+        // Redirect to the generated quiz page
+        window.location.href = `/quiz/${quiz.id}`;
       },
     });
   };
@@ -43,7 +44,8 @@ export default function Quiz() {
   const isPro = userData?.usage?.isPro;
   const creditsUsed = userData?.usage?.quizzesGenerated || 0;
   const creditLimit = 5;
-  const hasCredits = isPro || creditsUsed < creditLimit;
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  const hasCredits = isDevelopment || isPro || creditsUsed < creditLimit;
 
   return (
     <div className="min-h-screen pt-28 pb-16 px-4 sm:px-6 lg:px-8 flex items-center justify-center bg-slate-50 dark:bg-slate-950">
@@ -134,7 +136,9 @@ export default function Quiz() {
                   <div>
                     <span className="font-medium text-foreground">Credits</span>{" "}
                     <span>
-                      {isPro
+                      {isDevelopment
+                        ? "Unlimited (Development)"
+                        : isPro
                         ? "Unlimited (Pro)"
                         : `${Math.max(creditLimit - creditsUsed, 0)}/${creditLimit} free generations left`}
                     </span>

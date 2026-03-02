@@ -2,6 +2,7 @@ import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
+import { Toaster as SonnerToaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -14,9 +15,11 @@ import Quiz from "@/pages/Quiz";
 import QuizPlayer from "@/pages/QuizPlayer";
 import Admin from "@/pages/Admin";
 import Login from "@/pages/Login";
+import QuizRoom from "@/pages/QuizRoom";
 import NotFound from "@/pages/not-found";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
+import { ModernToastManager } from "@/components/ModernToastManager";
 
 const ADMIN_EMAILS = new Set([
   "codecraft2k@gmail.com",
@@ -57,6 +60,9 @@ function Router() {
           <Route path="/quiz/:id">
             {user ? <QuizPlayer /> : <Login />}
           </Route>
+          <Route path="/quiz-room/:id">
+            <QuizRoom />
+          </Route>
           <Route path="/admin">
             {user ? (isAdmin ? <Admin /> : <NotFound />) : <Login />}
           </Route>
@@ -74,6 +80,8 @@ function App() {
       <TooltipProvider>
         <Router />
         <Toaster />
+        <SonnerToaster />
+        <ModernToastManager />
       </TooltipProvider>
     </QueryClientProvider>
   );

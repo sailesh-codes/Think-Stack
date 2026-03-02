@@ -1,9 +1,10 @@
-import { Check, Zap } from "lucide-react";
+import { Check, Zap, Users, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCreateCheckout, useUserUsage } from "@/hooks/use-quizzes";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useState } from "react";
 
 export default function Pricing() {
   const { isAuthenticated } = useAuth();
@@ -33,7 +34,7 @@ export default function Pricing() {
         </p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+      <div className="grid lg:grid-cols-3 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
         {/* Free Plan */}
         <motion.div
           className="bg-card/90 border border-border rounded-3xl p-8 relative backdrop-blur-sm hover:border-blue-500/60 hover:shadow-[0_18px_45px_rgba(59,130,246,0.25)] transition-all"
@@ -128,6 +129,75 @@ export default function Pricing() {
               "Upgrade to Pro"
             )}
           </Button>
+        </motion.div>
+
+        {/* Organization Plan */}
+        <motion.div
+          className="bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-orange-500/30 rounded-3xl p-8 relative backdrop-blur-sm hover:border-orange-500/60 hover:shadow-[0_18px_45px_rgba(251,146,60,0.25)] transition-all"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          whileHover={{ y: -8, scale: 1.01 }}
+          viewport={{ once: true }}
+          transition={{ type: "spring", stiffness: 220, damping: 22, delay: 0.1 }}
+        >
+          <div className="absolute top-0 right-0 bg-gradient-to-l from-orange-500 to-red-500 text-white text-xs font-bold px-3 py-1 rounded-bl-xl flex items-center gap-1">
+            <Users className="h-3 w-3" />
+            TEAM
+          </div>
+          
+          <h3 className="text-2xl font-bold flex items-center gap-2">
+            Organization <Crown className="h-5 w-5 text-orange-500" />
+          </h3>
+          <div className="mt-4 flex items-baseline">
+            <span className="text-4xl font-bold">₹0</span>
+            <span className="ml-2 text-muted-foreground">/ 3 trials</span>
+          </div>
+          <p className="mt-4 text-muted-foreground">Perfect for team learning and training sessions.</p>
+          
+          <ul className="mt-8 space-y-4">
+            <li className="flex items-center gap-3">
+              <Check className="h-5 w-5 text-orange-500" />
+              <span>Live Multiplayer Quizzes</span>
+            </li>
+            <li className="flex items-center gap-3">
+              <Check className="h-5 w-5 text-orange-500" />
+              <span>Up to 10 Participants</span>
+            </li>
+            <li className="flex items-center gap-3">
+              <Check className="h-5 w-5 text-orange-500" />
+              <span>Real-time Results</span>
+            </li>
+            <li className="flex items-center gap-3">
+              <Check className="h-5 w-5 text-orange-500" />
+              <span>Shareable Quiz Links</span>
+            </li>
+            <li className="flex items-center gap-3">
+              <Check className="h-5 w-5 text-orange-500" />
+              <span>Randomized Questions</span>
+            </li>
+            <li className="flex items-center gap-3">
+              <Check className="h-5 w-5 text-orange-500" />
+              <span>Leaderboard & Points</span>
+            </li>
+          </ul>
+
+          <Button
+            className="w-full mt-8 bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600 border-0 font-semibold transition-all duration-200"
+            onClick={() => {
+              if (!isAuthenticated) {
+                window.location.href = "/login";
+                return;
+              }
+              // Navigate to quiz page with organization mode
+              window.location.href = "/quiz?mode=organization";
+            }}
+          >
+            Try Organization
+          </Button>
+          
+          <p className="text-xs text-muted-foreground mt-3 text-center">
+            3 free sessions, then upgrade for unlimited
+          </p>
         </motion.div>
       </div>
     </div>

@@ -40,12 +40,15 @@ export function useGenerateQuiz() {
 
   return useMutation({
     mutationFn: async (data: GenerateQuizInput) => {
+      console.log('Mutation function called with data:', data);
       const res = await fetch(api.quizzes.generate.path, {
         method: api.quizzes.generate.method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
         credentials: "include",
       });
+
+      console.log('API response status:', res.status);
 
       if (!res.ok) {
         if (res.status === 402) {
@@ -59,24 +62,27 @@ export function useGenerateQuiz() {
         throw new Error("Failed to generate quiz");
       }
 
-      return api.quizzes.generate.responses[201].parse(await res.json());
+      const result = api.quizzes.generate.responses[201].parse(await res.json());
+      console.log('Parsed result:', result);
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Mutation onSuccess called with data:', data);
+      // Just invalidate queries, let component handle success messages
       queryClient.invalidateQueries({ queryKey: [api.quizzes.list.path] });
-      // Also invalidate user/credits usage
       queryClient.invalidateQueries({ queryKey: [api.auth.me.path] });
-      toast({
-        title: "Success!",
-        description: "Your quiz has been generated.",
-      });
     },
     onError: (error) => {
+      console.log('Mutation onError called with error:', error);
       toast({
         title: "Error",
         description: error.message,
         variant: "destructive",
       });
     },
+    // Add timeout to prevent infinite loading
+    retry: false,
+    retryDelay: 0,
   });
 }
 

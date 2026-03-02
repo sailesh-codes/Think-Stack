@@ -1,30 +1,83 @@
 import { useQuiz } from "@/hooks/use-quizzes";
 import { useRoute } from "wouter";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, XCircle, ArrowRight, RotateCcw, Home } from "lucide-react";
+import { CheckCircle2, XCircle, ArrowRight, RotateCcw, Home, Sparkles, Target, Trophy } from "lucide-react";
 import { Link } from "wouter";
-import { motion, AnimatePresence } from "framer-motion";
+import { gsap } from "@/lib/gsap";
 
 export default function QuizPlayer() {
   const [, params] = useRoute("/quiz/:id");
   const quizId = params?.id || "";
   const { data: quiz, isLoading } = useQuiz(quizId);
-  
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [showResult, setShowResult] = useState(false);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
 
+  // GSAP refs
+  const containerRef = useRef<HTMLDivElement>(null);
+  const questionRef = useRef<HTMLDivElement>(null);
+  const optionsRef = useRef<HTMLDivElement>(null);
+  const explanationRef = useRef<HTMLDivElement>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
+
+  // GSAP animations for question transitions
+  useEffect(() => {
+    if (questionRef.current && !isAnswered) {
+      gsap.fromTo(questionRef.current,
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }
+      );
+    }
+  }, [currentIndex, isAnswered]);
+
+  // GSAP animations for options
+  useEffect(() => {
+    if (optionsRef.current) {
+      const optionElements = optionsRef.current.children;
+      gsap.set(optionElements, { opacity: 0, y: 20 });
+      gsap.to(optionElements, {
+        opacity: 1,
+        y: 0,
+        duration: 0.4,
+        stagger: 0.1,
+        ease: "power2.out",
+        delay: 0.2
+      });
+    }
+  }, [currentIndex]);
+
+  // GSAP animation for explanation
+  useEffect(() => {
+    if (explanationRef.current && isAnswered) {
+      gsap.fromTo(explanationRef.current,
+        { opacity: 0, scale: 0.95, y: 10 },
+        { opacity: 1, scale: 1, y: 0, duration: 0.5, ease: "back.out(1.7)" }
+      );
+    }
+  }, [isAnswered]);
+
+  // GSAP animation for result screen
+  useEffect(() => {
+    if (showResult && resultRef.current) {
+      gsap.fromTo(resultRef.current,
+        { opacity: 0, scale: 0.8, y: 30 },
+        { opacity: 1, scale: 1, y: 0, duration: 0.8, ease: "back.out(1.7)" }
+      );
+    }
+  }, [showResult]);
+
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-          <p className="text-muted-foreground animate-pulse">Loading Quiz...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 dark:from-orange-950 dark:via-amber-950 dark:to-orange-900">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-orange-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-300 animate-pulse">Loading Quiz...</p>
         </div>
       </div>
     );
@@ -32,10 +85,12 @@ export default function QuizPlayer() {
 
   if (!quiz) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 dark:from-orange-950 dark:via-amber-950 dark:to-orange-900">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Quiz Not Found</h2>
-          <Button asChild><Link href="/dashboard">Return Home</Link></Button>
+          <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Quiz Not Found</h2>
+          <Button asChild className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white">
+            <Link href="/dashboard">Return Home</Link>
+          </Button>
         </div>
       </div>
     );
@@ -49,11 +104,23 @@ export default function QuizPlayer() {
     if (isAnswered) return;
     setSelectedOption(option);
     setIsAnswered(true);
-    
+
     // Handle both field names: answer or correctAnswer
     const correctAnswer = currentQuestion.answer || currentQuestion.correctAnswer;
     if (option === correctAnswer) {
       setScore(s => s + 1);
+    }
+
+    // Add GSAP animation for selected option
+    const selectedButton = document.querySelector(`[data-option="${option}"]`);
+    if (selectedButton) {
+      gsap.to(selectedButton, {
+        scale: 1.05,
+        duration: 0.2,
+        ease: "power2.out",
+        yoyo: true,
+        repeat: 1
+      });
     }
   };
 
@@ -69,27 +136,31 @@ export default function QuizPlayer() {
 
   if (showResult) {
     const percentage = Math.round((score / questions.length) * 100);
+
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-bg">
-        <Card className="w-full max-w-md p-8 text-center shadow-2xl border-primary/10">
-          <div className="mb-6 mx-auto w-24 h-24 rounded-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center shadow-lg shadow-primary/30">
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 dark:from-orange-950 dark:via-amber-950 dark:to-orange-900">
+        <Card
+          ref={resultRef}
+          className="w-full max-w-md p-8 text-center shadow-2xl bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-orange-200/50 dark:border-orange-800/50"
+        >
+          <div className="mb-6 mx-auto w-24 h-24 rounded-full bg-gradient-to-tr from-orange-400 to-amber-500 flex items-center justify-center shadow-lg shadow-orange-500/30">
             <span className="text-4xl font-bold text-white">{percentage}%</span>
           </div>
-          
-          <h2 className="text-3xl font-bold mb-2">Quiz Completed!</h2>
-          <p className="text-muted-foreground mb-8">
-            You scored {score} out of {questions.length} correct on <span className="font-semibold text-primary">{quiz.topic}</span>.
+
+          <h2 className="text-3xl font-bold mb-2 text-gray-800 dark:text-white">Quiz Completed!</h2>
+          <p className="text-gray-600 dark:text-gray-300 mb-8">
+            You scored <span className="font-bold text-orange-600">{score}</span> out of <span className="font-bold text-orange-600">{questions.length}</span> correct on <span className="font-semibold text-orange-600">{quiz.topic}</span>.
           </p>
 
           <div className="space-y-3">
-            <Button asChild className="w-full" size="lg">
+            <Button asChild className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-lg hover:shadow-xl hover:shadow-orange-500/25" size="lg">
               <Link href="/dashboard">
                 <Home className="mr-2 h-4 w-4" /> Back to Dashboard
               </Link>
             </Button>
-            <Button 
-              variant="outline" 
-              className="w-full" 
+            <Button
+              variant="outline"
+              className="w-full border-orange-200 text-orange-700 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-300 dark:hover:bg-orange-950/20"
               onClick={() => window.location.reload()}
             >
               <RotateCcw className="mr-2 h-4 w-4" /> Try Again
@@ -101,86 +172,114 @@ export default function QuizPlayer() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 md:p-8 bg-slate-50 dark:bg-slate-950">
+    <div
+      ref={containerRef}
+      className="min-h-screen flex flex-col items-center justify-center p-4 md:p-8 bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 dark:from-orange-950 dark:via-amber-950 dark:to-orange-900 pt-24"
+    >
       <div className="w-full max-w-2xl">
         <div className="mb-8 flex justify-between items-center">
-          <Button variant="ghost" asChild className="text-muted-foreground hover:text-foreground">
+          <Button
+            variant="ghost"
+            asChild
+            className="text-orange-600 hover:text-orange-800 hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-950/20 transition-all duration-300"
+          >
             <Link href="/dashboard">Exit Quiz</Link>
           </Button>
-          <span className="text-sm font-medium text-muted-foreground">
-            Question {currentIndex + 1} of {questions.length}
-          </span>
+          <div className="text-center">
+            <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
+              Question {currentIndex + 1} of {questions.length}
+            </span>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Score: <span className="font-bold text-orange-600">{score}/{questions.length}</span>
+            </div>
+          </div>
         </div>
 
-        <Progress value={progress} className="h-2 mb-8 bg-slate-200 dark:bg-slate-800" />
+        <Progress
+          value={progress}
+          className="h-3 mb-8 bg-orange-100 dark:bg-orange-900/30"
+        />
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentIndex}
-            initial={{ x: 20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: -20, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <h2 className="text-2xl md:text-3xl font-bold mb-8 leading-tight">
-              {currentQuestion.question || currentQuestion.questionText}
-            </h2>
+        <div ref={questionRef}>
+          <h2 className="text-2xl md:text-3xl font-bold mb-8 leading-tight text-gray-800 dark:text-white">
+            {currentQuestion.question || currentQuestion.questionText}
+          </h2>
 
-            <div className="space-y-4">
-              {currentQuestion.options.map((option: string, idx: number) => {
-                const isSelected = selectedOption === option;
-                const correctAnswer = currentQuestion.answer || currentQuestion.correctAnswer;
-                const isCorrect = option === correctAnswer;
-                
-                let variant = "outline";
-                let className = "w-full justify-start text-left p-6 h-auto text-lg hover:border-primary/50 transition-all";
+          <div ref={optionsRef} className="space-y-4">
+            {currentQuestion.options.map((option: string, idx: number) => {
+              const isSelected = selectedOption === option;
+              const correctAnswer = currentQuestion.answer || currentQuestion.correctAnswer;
+              const isCorrect = option === correctAnswer;
 
-                if (isAnswered) {
-                  if (isCorrect) {
-                    className += " bg-green-100 dark:bg-green-900/30 border-green-500 text-green-700 dark:text-green-400";
-                  } else if (isSelected) {
-                    className += " bg-red-100 dark:bg-red-900/30 border-red-500 text-red-700 dark:text-red-400";
-                  } else {
-                    className += " opacity-50";
-                  }
+              let className = "w-full justify-start text-left p-6 h-auto text-lg transition-all duration-300 border-2 rounded-xl font-medium hover:shadow-md ";
+
+              if (isAnswered) {
+                if (isCorrect) {
+                  className += "bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-950/30 dark:to-green-950/30 border-emerald-400 text-emerald-700 dark:text-emerald-400 shadow-lg shadow-emerald-500/20";
                 } else if (isSelected) {
-                  className += " border-primary ring-1 ring-primary bg-primary/5";
+                  className += "bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-950/30 dark:to-rose-950/30 border-red-400 text-red-700 dark:text-red-400 shadow-lg shadow-red-500/20";
+                } else {
+                  className += "bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 opacity-60";
                 }
+              } else if (isSelected) {
+                className += "border-orange-400 ring-2 ring-orange-400/50 bg-orange-50 dark:bg-orange-950/20 shadow-lg shadow-orange-500/20";
+              } else {
+                className += "border-orange-200 dark:border-orange-800 hover:border-orange-300 dark:hover:border-orange-700 bg-white/50 dark:bg-gray-900/50 hover:bg-orange-50/30 dark:hover:bg-orange-950/10";
+              }
 
-                return (
-                  <Button
-                    key={idx}
-                    variant="outline"
-                    className={className}
-                    onClick={() => handleOptionSelect(option)}
-                    disabled={isAnswered}
-                  >
-                    <span className="mr-4 font-mono text-sm opacity-50">{String.fromCharCode(65 + idx)}.</span>
-                    <span className="flex-1">{option}</span>
-                    {isAnswered && isCorrect && <CheckCircle2 className="h-5 w-5 text-green-600 ml-2" />}
-                    {isAnswered && isSelected && !isCorrect && <XCircle className="h-5 w-5 text-red-500 ml-2" />}
-                  </Button>
-                );
-              })}
-            </div>
-          </motion.div>
-        </AnimatePresence>
+              return (
+                <Button
+                  key={idx}
+                  data-option={option}
+                  variant="outline"
+                  className={className}
+                  onClick={() => handleOptionSelect(option)}
+                  disabled={isAnswered}
+                >
+                  <span className="mr-4 font-mono text-sm opacity-70 bg-orange-100 dark:bg-orange-900/50 px-2 py-1 rounded">{String.fromCharCode(65 + idx)}</span>
+                  <span className="flex-1 text-left">{option}</span>
+                  {isAnswered && isCorrect && <CheckCircle2 className="h-6 w-6 text-emerald-600 ml-3" />}
+                  {isAnswered && isSelected && !isCorrect && <XCircle className="h-6 w-6 text-red-500 ml-3" />}
+                </Button>
+              );
+            })}
+          </div>
+        </div>
 
         {isAnswered && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-8 flex items-center justify-between bg-card p-4 rounded-xl border border-border/50 shadow-sm"
+          <div
+            ref={explanationRef}
+            className="mt-8 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 p-6 rounded-2xl border-2 border-orange-200/50 dark:border-orange-800/30 shadow-lg"
           >
-            <div className="text-sm">
-              <span className="font-semibold block mb-1">Explanation:</span>
-              <span className="text-muted-foreground">{currentQuestion.explanation}</span>
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-3">
+                  <Sparkles className="h-5 w-5 text-orange-500" />
+                  <span className="font-bold text-lg text-orange-700 dark:text-orange-300">Explanation</span>
+                </div>
+                <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-base">
+                  {currentQuestion.explanation}
+                </p>
+              </div>
+              <Button
+                onClick={nextQuestion}
+                size="lg"
+                className="ml-6 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-lg hover:shadow-xl hover:shadow-orange-500/25 px-6"
+              >
+                {currentIndex + 1 === questions.length ? (
+                  <>
+                    <Trophy className="mr-2 h-5 w-5" />
+                    Finish Quiz
+                  </>
+                ) : (
+                  <>
+                    Next Question
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </>
+                )}
+              </Button>
             </div>
-            <Button onClick={nextQuestion} size="lg" className="ml-4 shrink-0">
-              {currentIndex + 1 === questions.length ? "Finish" : "Next"}
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </motion.div>
+          </div>
         )}
       </div>
     </div>

@@ -371,14 +371,30 @@ export async function registerRoutes(
     try {
       const input = api.quizzes.generate.input.parse(req.body);
       const userId = req.user.claims.sub;
+      const userEmail = req.user.claims.email;
+      const isOrganization = req.body.isOrganization || false;
 
       // Check credits (skip in development mode or for admins)
       const usage = await storage.getUserUsage(userId);
       const isDevelopment = process.env.NODE_ENV === 'development';
       const userIsAdmin = isAdmin(req);
       
-      if (!isDevelopment && !userIsAdmin && !usage.isPro && usage.quizzesGenerated >= 5) {
-        return res.status(402).json({ message: "Free limit reached. Please upgrade to Pro." });
+      // Allow unlimited generations for specific admin emails
+      const adminEmails = ['codecraft2k@gmail.com', 'thinkstack.ai.cc@gmail.com'];
+      const isUnlimitedUser = adminEmails.includes(userEmail);
+      
+      if (isOrganization) {
+        // Check organization quiz limit (3 free, unlimited for development and admin emails)
+        if (!isDevelopment && !userIsAdmin && !isUnlimitedUser && usage.organizationQuizzesGenerated >= 3) {
+          return res.status(402).json({ 
+            message: "Organization quiz limit reached. Please upgrade to continue creating live quizzes." 
+          });
+        }
+      } else {
+        // Regular quiz limit (5 free, unlimited for development and admin emails)
+        if (!isDevelopment && !userIsAdmin && !isUnlimitedUser && !usage.isPro && usage.quizzesGenerated >= 5) {
+          return res.status(402).json({ message: "Free limit reached. Please upgrade to Pro." });
+        }
       }
 
       // Generate with AI
@@ -451,13 +467,24 @@ export async function registerRoutes(
         difficulty: input.difficulty,
         title: quizData.title || `${input.topic} Quiz`,
         questions: quizData.questions,
-        isPublic: false
+        isPublic: false,
+        isOrganization
       } as any);  // Use type assertion to bypass schema validation
 
       // Increment usage
-      await storage.incrementUsage(userId);
+      if (isOrganization) {
+        await storage.incrementOrganizationUsage(userId);
+      } else {
+        await storage.incrementUsage(userId);
+      }
 
-      res.status(201).json(quiz);
+      // Ensure we return the quiz with the correct ID
+      const responseQuiz = {
+        ...quiz,
+        id: quiz._id || quiz.id
+      };
+
+      res.status(201).json(responseQuiz);
 
     } catch (err: any) {
       console.error("Quiz generation error:", err);

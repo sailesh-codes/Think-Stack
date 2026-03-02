@@ -9,6 +9,9 @@ if (!process.env.DATABASE_URL) {
   console.warn("DATABASE_URL not set. Using mock database for development.");
   // For development without database, we'll use a mock
   process.env.DATABASE_URL = "mongodb://localhost:27017/thinkstack";
+} else if (process.env.DATABASE_URL.includes("159.41.196.")) {
+  console.warn("Remote MongoDB detected. Switching to local MongoDB for development.");
+  process.env.DATABASE_URL = "mongodb://localhost:27017/thinkstack";
 }
 
 let client: MongoClient;

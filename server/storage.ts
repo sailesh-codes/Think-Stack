@@ -8,6 +8,7 @@ export interface IStorage {
   // User Usage
   getUserUsage(userId: string): Promise<UserUsage>;
   incrementUsage(userId: string): Promise<UserUsage>;
+  incrementOrganizationUsage(userId: string): Promise<UserUsage>;
   setUserPro(userId: string, isPro: boolean): Promise<UserUsage>;
 
   // Quizzes
@@ -30,6 +31,7 @@ export class DatabaseStorage implements IStorage {
         id: new ObjectId().toString(),
         userId,
         quizzesGenerated: 0,
+        organizationQuizzesGenerated: 0,
         isPro: false
       };
       await collection.insertOne(newUsage as any);
@@ -82,28 +84,77 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async incrementOrganizationUsage(userId: string): Promise<UserUsage> {
+    console.log('🔍 incrementOrganizationUsage called for userId:', userId);
+    const db = await getDatabase();
+    console.log('📊 Database connected:', !!db);
+    const collection = db.collection('userUsage');
+    console.log('📁 Collection ready');
+    
+    try {
+      // First try to find existing usage
+      let usageDoc = await collection.findOne({ userId });
+      
+      if (!usageDoc) {
+        // Create default usage record
+        const newUsage: UserUsage = {
+          id: new ObjectId().toString(),
+          userId,
+          quizzesGenerated: 0,
+          organizationQuizzesGenerated: 0,
+          isPro: false
+        };
+        await collection.insertOne(newUsage as any);
+        return newUsage;
+      }
+      
+      // Increment organization quizzes using updateOne then findOne
+      await collection.updateOne(
+        { userId },
+        { 
+          $inc: { organizationQuizzesGenerated: 1 }
+        }
+      );
+      
+      // Get the updated document
+      const updated = await collection.findOne({ userId });
+      if (!updated) {
+        throw new Error('Failed to retrieve updated usage');
+      }
+      
+      return updated as unknown as UserUsage;
+    } catch (error) {
+      console.error('MongoDB incrementOrganizationUsage error:', error);
+      throw new Error(`Failed to increment organization usage: ${(error as Error).message}`);
+    }
+  }
+
   async setUserPro(userId: string, isPro: boolean): Promise<UserUsage> {
     const db = await getDatabase();
     const collection = db.collection('userUsage');
     
-    const result = await collection.findOneAndUpdate(
+    // Update or insert user pro status
+    await collection.updateOne(
       { userId },
       { 
         $set: { isPro },
         $setOnInsert: { 
           id: new ObjectId().toString(),
           userId,
-          quizzesGenerated: 0
+          quizzesGenerated: 0,
+          organizationQuizzesGenerated: 0
         }
       },
-      { upsert: true, returnDocument: 'after' }
+      { upsert: true }
     );
     
-    if (!result || !result.value) {
+    // Get the updated document
+    const updated = await collection.findOne({ userId });
+    if (!updated) {
       throw new Error('Failed to set user pro status');
     }
     
-    return result.value as unknown as UserUsage;
+    return updated as unknown as UserUsage;
   }
 
   async createQuiz(quiz: InsertQuiz & { userId: string }): Promise<Quiz> {

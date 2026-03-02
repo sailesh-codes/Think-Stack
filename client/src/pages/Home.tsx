@@ -4,10 +4,10 @@ import { Link } from "wouter";
 import { 
   ArrowRight, BrainCircuit, CheckCircle2, Sparkles, Zap, 
   Shield, BookOpen, Users, Target, Award, Clock, BarChart3,
-  GraduationCap, Globe, Star, ChevronDown, Check, X
+  GraduationCap, Globe, Star, ChevronDown, Check, X, MousePointer2
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Accordion,
   AccordionContent,
@@ -26,8 +26,119 @@ const fadeInUp = {
 
 export default function Home() {
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isHovered, setIsHovered] = useState(false);
+  const heroRef = useRef<HTMLElement>(null);
+  const particleRefs = useRef<HTMLDivElement[]>([]);
 
-  // Initialize GSAP scroll animations
+  // Track mouse movement for interactive effects
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = heroRef.current?.getBoundingClientRect();
+      if (rect) {
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        setMousePosition({ x, y });
+      }
+    };
+
+    const handleMouseLeave = () => {
+      setMousePosition({ x: 0, y: 0 });
+    };
+
+    const heroElement = heroRef.current;
+    if (heroElement) {
+      heroElement.addEventListener('mousemove', handleMouseMove);
+      heroElement.addEventListener('mouseleave', handleMouseLeave);
+    }
+
+    return () => {
+      if (heroElement) {
+        heroElement.removeEventListener('mousemove', handleMouseMove);
+        heroElement.removeEventListener('mouseleave', handleMouseLeave);
+      }
+    };
+  }, []);
+
+  // Floating particles animation
+  useEffect(() => {
+    particleRefs.current.forEach((particle, index) => {
+      if (particle) {
+        const delay = index * 0.5;
+        gsap.set(particle, {
+          x: Math.random() * window.innerWidth,
+          y: Math.random() * window.innerHeight,
+          opacity: 0
+        });
+
+        gsap.to(particle, {
+          x: Math.random() * window.innerWidth,
+          y: Math.random() * window.innerHeight,
+          opacity: 0.6,
+          duration: 8 + Math.random() * 4,
+          ease: "none",
+          repeat: -1,
+          yoyo: true,
+          delay: delay
+        });
+      }
+    });
+  }, []);
+
+  // Live wallpaper background animation
+  useEffect(() => {
+    // Create multiple animated background elements
+    const tl = gsap.timeline({ repeat: -1, yoyo: true });
+    
+    // Animate the existing background elements with more organic movement
+    tl.to('.hero-bg-1', {
+      x: '+=30',
+      y: '+=20',
+      scale: 1.1,
+      rotation: 5,
+      duration: 8,
+      ease: "power2.inOut"
+    })
+    .to('.hero-bg-2', {
+      x: '-=25',
+      y: '+=15',
+      scale: 0.9,
+      rotation: -3,
+      duration: 10,
+      ease: "power2.inOut"
+    }, 0)
+    .to('.hero-bg-3', {
+      x: '+=20',
+      y: '-=25',
+      scale: 1.05,
+      rotation: 8,
+      duration: 12,
+      ease: "power2.inOut"
+    }, 0);
+
+    // Add continuous subtle pulsing
+    gsap.to('.hero-bg-1', {
+      scale: 1.02,
+      duration: 4,
+      ease: "power2.inOut",
+      repeat: -1,
+      yoyo: true
+    });
+    
+    gsap.to('.hero-bg-2', {
+      scale: 0.98,
+      duration: 5,
+      ease: "power2.inOut",
+      repeat: -1,
+      yoyo: true,
+      delay: 1
+    });
+
+    return () => {
+      tl.kill();
+    };
+  }, []);
+
   useEffect(() => {
     // Hide the text split element initially
     gsap.set('.text-split-main', { opacity: 0 })
@@ -313,12 +424,89 @@ export default function Home() {
   return (
     <div className="overflow-hidden">
       {/* Hero Section */}
-      <section id="home" className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-primary/20 blur-[120px] rounded-full -z-10 opacity-50" />
-        <div className="absolute top-1/4 right-0 w-[300px] h-[300px] bg-purple-500/20 blur-[100px] rounded-full -z-10 opacity-40" />
-        
-        <div className="hero-content">
+      <section 
+        ref={heroRef}
+        id="home" 
+        className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center overflow-hidden"
+      >
+        {/* Live Wallpaper Background - Multiple Animated Layers */}
+        <div className="absolute inset-0 -z-20">
+          {/* Primary flowing gradient waves */}
+          <div className="hero-bg-1 absolute top-0 left-1/4 w-[800px] h-[600px] bg-gradient-to-br from-orange-200/30 via-amber-100/20 to-orange-100/15 blur-[100px] rounded-full opacity-60" />
+          <div className="hero-bg-2 absolute top-1/3 right-1/4 w-[600px] h-[500px] bg-gradient-to-tl from-amber-200/25 via-orange-150/20 to-orange-50/15 blur-[80px] rounded-full opacity-50" />
+          <div className="hero-bg-3 absolute bottom-1/4 left-1/6 w-[700px] h-[550px] bg-gradient-to-tr from-orange-300/20 via-amber-200/15 to-orange-100/10 blur-[90px] rounded-full opacity-40" />
           
+          {/* Secondary organic shapes */}
+          <div className="absolute top-1/6 right-1/3 w-[300px] h-[300px] bg-gradient-to-br from-orange-200/20 to-amber-100/15 blur-[60px] rounded-full opacity-30 animate-pulse" style={{ animationDuration: '8s' }} />
+          <div className="absolute bottom-1/3 left-1/2 w-[400px] h-[400px] bg-gradient-to-tl from-amber-150/25 to-orange-100/20 blur-[70px] rounded-full opacity-25 animate-pulse" style={{ animationDuration: '10s', animationDelay: '2s' }} />
+          
+          {/* Flowing ribbons */}
+          <div className="absolute top-1/4 left-1/8 w-[200px] h-[800px] bg-gradient-to-b from-orange-200/10 via-amber-100/5 to-transparent blur-[40px] opacity-40 animate-pulse" style={{ animationDuration: '12s', animationDelay: '1s' }} />
+          <div className="absolute top-1/2 right-1/8 w-[250px] h-[600px] bg-gradient-to-t from-amber-200/15 via-orange-100/8 to-transparent blur-[50px] opacity-35 animate-pulse" style={{ animationDuration: '15s', animationDelay: '3s' }} />
+          
+          {/* Subtle particle field */}
+          <div className="absolute inset-0">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div
+                key={i}
+                className="absolute w-1 h-1 bg-orange-300/30 rounded-full animate-pulse"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animationDuration: `${3 + Math.random() * 4}s`,
+                  animationDelay: `${Math.random() * 5}s`
+                }}
+              />
+            ))}
+          </div>
+        </div>
+        
+        {/* Floating Particles */}
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div
+            key={i}
+            ref={(el) => {
+              if (el) particleRefs.current[i] = el;
+            }}
+            className="absolute w-2 h-2 bg-gradient-to-r from-primary/60 to-purple-500/60 rounded-full blur-sm -z-10"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+            }}
+          />
+        ))}
+
+        {/* Interactive Cursor Follower */}
+        <div 
+          className="absolute pointer-events-none -z-10 transition-all duration-300"
+          style={{
+            left: mousePosition.x - 50,
+            top: mousePosition.y - 50,
+            opacity: mousePosition.x === 0 ? 0 : 0.3,
+          }}
+        >
+          <div className="w-24 h-24 bg-gradient-to-r from-primary/20 to-purple-500/20 rounded-full blur-xl animate-pulse" />
+        </div>
+
+        <div className="hero-content relative z-10">
+          
+          {/* Interactive Brain Icon */}
+          <div className="mb-8 flex justify-center">
+            <div 
+              className="p-4 bg-gradient-to-br from-primary/10 to-purple-500/10 rounded-full border border-primary/20 group cursor-pointer transition-all duration-500 hover:scale-110 hover:rotate-12"
+              onMouseEnter={() => setIsHovered(true)}
+              onMouseLeave={() => setIsHovered(false)}
+            >
+              <BrainCircuit 
+                className={`h-12 w-12 text-primary transition-all duration-500 ${isHovered ? 'scale-110 rotate-12' : ''}`}
+              />
+              {isHovered && (
+                <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center animate-bounce">
+                  <Sparkles className="h-3 w-3 text-white" />
+                </div>
+              )}
+            </div>
+          </div>
 
           <h1 className="hero-title text-5xl md:text-7xl font-bold tracking-tight mb-8">
             <span className="text-split-main" style={{ opacity: 0 }}>Elevate your learning with AI</span>
@@ -333,36 +521,41 @@ export default function Home() {
             <Button
               asChild
               size="lg"
-              className="hero-button rounded-full px-8 text-lg h-14 shadow-lg shadow-slate-900/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 hover:brightness-110 transition-all duration-200"
+              className="hero-button rounded-full px-8 text-lg h-14 shadow-lg shadow-slate-900/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 hover:brightness-110 transition-all duration-200 group overflow-hidden relative"
             >
               <Link href="/dashboard" data-testid="button-start-generating">
-                Start Free <ArrowRight className="ml-2 h-5 w-5" />
+                <span className="relative z-10 flex items-center">
+                  Start Free 
+                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-primary to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </Link>
             </Button>
             <Button
               asChild
               variant="outline"
               size="lg"
-              className="hero-button rounded-full px-8 text-lg h-14 border border-slate-800 text-slate-900 hover:bg-slate-900 hover:text-white transition-colors duration-200"
+              className="hero-button rounded-full px-8 text-lg h-14 border border-slate-800 text-slate-900 hover:bg-slate-900 hover:text-white transition-colors duration-200 group"
             >
               <Link href="/pricing" data-testid="button-view-pricing">
+                <MousePointer2 className="mr-2 h-5 w-5 group-hover:rotate-12 transition-transform" />
                 View Pricing
               </Link>
             </Button>
           </div>
 
           <div className="flex items-center justify-center gap-8 mt-12 text-sm text-muted-foreground">
-            <div className="hero-feature flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
-              <span>No credit card required</span>
+            <div className="hero-feature flex items-center gap-2 group cursor-pointer">
+              <CheckCircle2 className="h-4 w-4 text-green-500 group-hover:scale-110 transition-transform" />
+              <span className="group-hover:text-green-600 transition-colors">No credit card required</span>
             </div>
-            <div className="hero-feature flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
-              <span>5 free quizzes</span>
+            <div className="hero-feature flex items-center gap-2 group cursor-pointer">
+              <CheckCircle2 className="h-4 w-4 text-green-500 group-hover:scale-110 transition-transform" />
+              <span className="group-hover:text-green-600 transition-colors">5 free quizzes</span>
             </div>
-            <div className="hero-feature flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
-              <span>Cancel anytime</span>
+            <div className="hero-feature flex items-center gap-2 group cursor-pointer">
+              <CheckCircle2 className="h-4 w-4 text-green-500 group-hover:scale-110 transition-transform" />
+              <span className="group-hover:text-green-600 transition-colors">Cancel anytime</span>
             </div>
           </div>
         </div>

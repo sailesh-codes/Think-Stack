@@ -34,6 +34,7 @@ export interface Quiz {
     explanation: string;
   }>;
   isPublic: boolean;
+  isOrganization?: boolean;
   createdAt: Date;
 }
 
@@ -42,6 +43,7 @@ export interface UserUsage {
   id: string;
   userId: string;
   quizzesGenerated: number;
+  organizationQuizzesGenerated: number;
   isPro: boolean;
 }
 
@@ -63,6 +65,7 @@ export const generateQuizSchema = z.object({
   topic: z.string().min(1, "Topic is required"),
   difficulty: z.enum(["easy", "medium", "hard"]),
   amount: z.number().min(1).max(10).default(5),
+  isOrganization: z.boolean().optional().default(false),
 });
 
 export const upsertUserSchema = z.object({

@@ -4,10 +4,12 @@ import { Link } from "wouter";
 import { 
   ArrowRight, BrainCircuit, CheckCircle2, Sparkles, Zap, 
   Shield, BookOpen, Users, Target, Award, Clock, BarChart3,
-  GraduationCap, Globe, Star, ChevronDown, Check, X, MousePointer2
+  GraduationCap, Globe, Star, ChevronDown, Check, X
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
+import * as PIXI from 'pixi.js';
+import { gsap } from "@/lib/gsap";
 import {
   Accordion,
   AccordionContent,
@@ -15,7 +17,6 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { animations } from "@/lib/gsap";
-import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 const fadeInUp = {
@@ -26,119 +27,12 @@ const fadeInUp = {
 
 export default function Home() {
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [isHovered, setIsHovered] = useState(false);
-  const heroRef = useRef<HTMLElement>(null);
-  const particleRefs = useRef<HTMLDivElement[]>([]);
 
-  // Track mouse movement for interactive effects
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      const rect = heroRef.current?.getBoundingClientRect();
-      if (rect) {
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        setMousePosition({ x, y });
-      }
-    };
+  // PIXI refs
+  const pixiAppRef = useRef<PIXI.Application | null>(null);
+  const pixiContainerRef = useRef<HTMLDivElement>(null);
 
-    const handleMouseLeave = () => {
-      setMousePosition({ x: 0, y: 0 });
-    };
-
-    const heroElement = heroRef.current;
-    if (heroElement) {
-      heroElement.addEventListener('mousemove', handleMouseMove);
-      heroElement.addEventListener('mouseleave', handleMouseLeave);
-    }
-
-    return () => {
-      if (heroElement) {
-        heroElement.removeEventListener('mousemove', handleMouseMove);
-        heroElement.removeEventListener('mouseleave', handleMouseLeave);
-      }
-    };
-  }, []);
-
-  // Floating particles animation
-  useEffect(() => {
-    particleRefs.current.forEach((particle, index) => {
-      if (particle) {
-        const delay = index * 0.5;
-        gsap.set(particle, {
-          x: Math.random() * window.innerWidth,
-          y: Math.random() * window.innerHeight,
-          opacity: 0
-        });
-
-        gsap.to(particle, {
-          x: Math.random() * window.innerWidth,
-          y: Math.random() * window.innerHeight,
-          opacity: 0.6,
-          duration: 8 + Math.random() * 4,
-          ease: "none",
-          repeat: -1,
-          yoyo: true,
-          delay: delay
-        });
-      }
-    });
-  }, []);
-
-  // Live wallpaper background animation
-  useEffect(() => {
-    // Create multiple animated background elements
-    const tl = gsap.timeline({ repeat: -1, yoyo: true });
-    
-    // Animate the existing background elements with more organic movement
-    tl.to('.hero-bg-1', {
-      x: '+=30',
-      y: '+=20',
-      scale: 1.1,
-      rotation: 5,
-      duration: 8,
-      ease: "power2.inOut"
-    })
-    .to('.hero-bg-2', {
-      x: '-=25',
-      y: '+=15',
-      scale: 0.9,
-      rotation: -3,
-      duration: 10,
-      ease: "power2.inOut"
-    }, 0)
-    .to('.hero-bg-3', {
-      x: '+=20',
-      y: '-=25',
-      scale: 1.05,
-      rotation: 8,
-      duration: 12,
-      ease: "power2.inOut"
-    }, 0);
-
-    // Add continuous subtle pulsing
-    gsap.to('.hero-bg-1', {
-      scale: 1.02,
-      duration: 4,
-      ease: "power2.inOut",
-      repeat: -1,
-      yoyo: true
-    });
-    
-    gsap.to('.hero-bg-2', {
-      scale: 0.98,
-      duration: 5,
-      ease: "power2.inOut",
-      repeat: -1,
-      yoyo: true,
-      delay: 1
-    });
-
-    return () => {
-      tl.kill();
-    };
-  }, []);
-
+  // Initialize GSAP scroll animations
   useEffect(() => {
     // Hide the text split element initially
     gsap.set('.text-split-main', { opacity: 0 })
@@ -186,6 +80,9 @@ export default function Home() {
     animations.slideUp('.hero-description', 1.2, 2)
     animations.staggerFadeIn('.hero-button', 0.2, 2.3)
     animations.staggerFadeIn('.hero-feature', 0.1, 2.6)
+
+    // Initialize PIXI.js animated background
+    initPixiBackground()
 
     // Trusted by section - scroll triggered
     animations.scrollReveal('.trusted-section', 'bottom')
@@ -288,6 +185,16 @@ export default function Home() {
       // Kill all ScrollTriggers and timelines
       ScrollTrigger.getAll().forEach(trigger => trigger.kill())
       howItWorksTimeline.kill()
+      
+      // Destroy PIXI application
+      if (pixiAppRef.current) {
+        try {
+          pixiAppRef.current.destroy(true)
+          pixiAppRef.current = null
+        } catch (error) {
+          console.error('Error destroying PIXI application:', error)
+        }
+      }
     }
 
     // Feature demo section - scroll triggered
@@ -307,6 +214,179 @@ export default function Home() {
     animations.scrollReveal('.cta-section', 'bottom')
     animations.fadeIn('.cta-content', 1, 0.3)
   }, [])
+
+  // PIXI.js background initialization
+  const initPixiBackground = () => {
+    console.log('🎨 Initializing PIXI.js background...');
+    
+    // Check if PIXI is available
+    if (typeof PIXI === 'undefined') {
+      console.error('❌ PIXI.js is not loaded! Falling back to static background.');
+      // Add fallback static background
+      if (pixiContainerRef.current) {
+        pixiContainerRef.current.style.background = 'linear-gradient(45deg, rgba(1, 175, 246, 0.1), rgba(240, 0, 133, 0.1), rgba(255, 208, 54, 0.1))';
+      }
+      return;
+    }
+
+    console.log('✅ PIXI.js is available');
+    
+    if (!pixiContainerRef.current) {
+      console.warn('❌ PIXI container ref not available');
+      return;
+    }
+
+    console.log('✅ PIXI container ref available');
+
+    try {
+      // Create PIXI application with working configuration
+      const app = new PIXI.Application({
+        width: window.innerWidth,
+        height: window.innerHeight,
+        backgroundColor: 0xFFFFFF, // White background to match site
+        antialias: true
+      });
+
+      console.log('✅ PIXI application created', { width: app.screen.width, height: app.screen.height });
+
+      pixiAppRef.current = app;
+
+      // Append to container and set up ticker
+      pixiContainerRef.current.appendChild(app.view);
+      console.log('✅ PIXI canvas appended to DOM');
+
+      app.ticker.stop(); // Stop Pixi ticker
+
+      // Use GSAP ticker for PIXI updates
+      gsap.ticker.add(() => {
+        app.ticker.update();
+      });
+      console.log('✅ GSAP ticker integration complete');
+
+      // Configuration matching the working example
+      const gridSize = 11;
+      const circD = 63; // circle diameter
+      const circOffsetX = 0.11111; // circle offset
+      const circOffsetY = 0.15873; // circle offset
+      const color1 = 0x01AFF6; // blue
+      const color2 = 0xF20085; // pink
+      const color3 = 0xFFD036; // yellow
+      const animDuration = 0.8;
+
+      // Create grid of circle containers
+      for (let i = 0; i < gridSize; i++) {
+        for (let j = 0; j < gridSize; j++) {
+          const container = new PIXI.Container();
+          const circContainer1 = new PIXI.Container();
+          const circContainer2 = new PIXI.Container();
+          const circContainer3 = new PIXI.Container();
+
+          // Create circles with blend modes (using type assertion for TS compatibility)
+          const circle1 = new PIXI.Graphics();
+          circle1.lineStyle(0);
+          circle1.beginFill(color1, 1);
+          circle1.drawCircle(0, 0, circD/2);
+          circle1.endFill();
+          (circle1.blendMode as any) = 1; // MULTIPLY blend mode
+          circContainer1.addChild(circle1);
+          circContainer1.x = 0;
+          circContainer1.y = 0;
+          container.addChild(circContainer1);
+
+          const circle2 = new PIXI.Graphics();
+          circle2.lineStyle(0);
+          circle2.beginFill(color2, 1);
+          circle2.drawCircle(0, 0, circD/2);
+          circle2.endFill();
+          (circle2.blendMode as any) = 1; // MULTIPLY blend mode
+          circContainer2.addChild(circle2);
+          circContainer2.x = -circOffsetX*circD;
+          circContainer2.y = circOffsetY*circD;
+          container.addChild(circContainer2);
+
+          const circle3 = new PIXI.Graphics();
+          circle3.lineStyle(0);
+          circle3.beginFill(color3, 1);
+          circle3.drawCircle(0, 0, circD/2);
+          circle3.endFill();
+          (circle3.blendMode as any) = 1; // MULTIPLY blend mode
+          circContainer3.addChild(circle3);
+          circContainer3.x = circOffsetX*circD;
+          circContainer3.y = circOffsetY*circD;
+          container.addChild(circContainer3);
+
+          app.stage.addChild(container);
+
+          // Position containers in grid (adjusted for full screen)
+          container.x = i * circD + circD/2 + i * 2;
+          container.y = j * circD + circD/2 + j * 2;
+        }
+      }
+
+      // Position the stage
+      app.stage.x = 2;
+
+      // GSAP animations matching the working example
+      gsap.timeline({ delay: 0.2 })
+        .from(app.stage.children, {
+          pixi: { scale: 0, rotation: 360 },
+          duration: 2,
+          ease: 'power4',
+          stagger: {
+            each: 0.1,
+            grid: [gridSize, gridSize],
+            from: [0, 1]
+          }
+        })
+        .to(app.stage.children, {
+          duration: animDuration,
+          ease: 'sine.inOut',
+          stagger: {
+            each: 0.1,
+            repeat: -1,
+            yoyo: true,
+            grid: [gridSize, gridSize],
+            from: [0, 1],
+            onStart: function() {
+              // Animate all container children
+              gsap.to(app.stage.children.map(container => container.children).flat(), {
+                pixi: { scale: 0.15 },
+                duration: animDuration,
+                ease: 'sine.inOut',
+                repeat: -1,
+                yoyo: true
+              });
+            }
+          }
+        }, 0.1);
+
+      // Handle window resize
+      const handleResize = () => {
+        try {
+          if (app && pixiContainerRef.current) {
+            app.renderer.resize(window.innerWidth, window.innerHeight);
+          }
+        } catch (error) {
+          console.error('Error handling window resize:', error);
+        }
+      };
+
+      window.addEventListener('resize', handleResize);
+
+      // Return cleanup function
+      return () => {
+        try {
+          window.removeEventListener('resize', handleResize);
+        } catch (error) {
+          console.error('Error removing resize listener:', error);
+        }
+      };
+
+    } catch (error) {
+      console.error('Error initializing PIXI background:', error);
+      return () => {};
+    }
+  };
 
   const features = [
     { icon: Zap, title: "Instant Generation", description: "Create quizzes in seconds with our advanced AI engine" },
@@ -422,91 +502,30 @@ export default function Home() {
   ];
 
   return (
-    <div className="overflow-hidden">
+    <div className="overflow-hidden bg-white min-h-screen">
       {/* Hero Section */}
-      <section 
-        ref={heroRef}
-        id="home" 
-        className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center overflow-hidden"
-      >
-        {/* Live Wallpaper Background - Multiple Animated Layers */}
-        <div className="absolute inset-0 -z-20">
-          {/* Primary flowing gradient waves */}
-          <div className="hero-bg-1 absolute top-0 left-1/4 w-[800px] h-[600px] bg-gradient-to-br from-orange-200/30 via-amber-100/20 to-orange-100/15 blur-[100px] rounded-full opacity-60" />
-          <div className="hero-bg-2 absolute top-1/3 right-1/4 w-[600px] h-[500px] bg-gradient-to-tl from-amber-200/25 via-orange-150/20 to-orange-50/15 blur-[80px] rounded-full opacity-50" />
-          <div className="hero-bg-3 absolute bottom-1/4 left-1/6 w-[700px] h-[550px] bg-gradient-to-tr from-orange-300/20 via-amber-200/15 to-orange-100/10 blur-[90px] rounded-full opacity-40" />
-          
-          {/* Secondary organic shapes */}
-          <div className="absolute top-1/6 right-1/3 w-[300px] h-[300px] bg-gradient-to-br from-orange-200/20 to-amber-100/15 blur-[60px] rounded-full opacity-30 animate-pulse" style={{ animationDuration: '8s' }} />
-          <div className="absolute bottom-1/3 left-1/2 w-[400px] h-[400px] bg-gradient-to-tl from-amber-150/25 to-orange-100/20 blur-[70px] rounded-full opacity-25 animate-pulse" style={{ animationDuration: '10s', animationDelay: '2s' }} />
-          
-          {/* Flowing ribbons */}
-          <div className="absolute top-1/4 left-1/8 w-[200px] h-[800px] bg-gradient-to-b from-orange-200/10 via-amber-100/5 to-transparent blur-[40px] opacity-40 animate-pulse" style={{ animationDuration: '12s', animationDelay: '1s' }} />
-          <div className="absolute top-1/2 right-1/8 w-[250px] h-[600px] bg-gradient-to-t from-amber-200/15 via-orange-100/8 to-transparent blur-[50px] opacity-35 animate-pulse" style={{ animationDuration: '15s', animationDelay: '3s' }} />
-          
-          {/* Subtle particle field */}
-          <div className="absolute inset-0">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <div
-                key={i}
-                className="absolute w-1 h-1 bg-orange-300/30 rounded-full animate-pulse"
-                style={{
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 100}%`,
-                  animationDuration: `${3 + Math.random() * 4}s`,
-                  animationDelay: `${Math.random() * 5}s`
-                }}
-              />
-            ))}
+      <section id="home" className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center bg-white">
+        {/* PIXI.js Animated Background */}
+        <div 
+          ref={pixiContainerRef}
+          className="absolute inset-0 z-0 pointer-events-none"
+          style={{ opacity: 0.8 }}
+        >
+          {/* CSS Fallback Animation */}
+          <div className="absolute inset-0 animate-pulse">
+            <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-blue-400/20 rounded-full blur-xl animate-bounce" style={{ animationDelay: '0s', animationDuration: '3s' }}></div>
+            <div className="absolute top-1/2 right-1/4 w-24 h-24 bg-blue-500/20 rounded-full blur-lg animate-bounce" style={{ animationDelay: '1s', animationDuration: '4s' }}></div>
+            <div className="absolute bottom-1/4 left-1/2 w-40 h-40 bg-sky-400/20 rounded-full blur-2xl animate-bounce" style={{ animationDelay: '2s', animationDuration: '5s' }}></div>
+            <div className="absolute top-1/3 right-1/3 w-20 h-20 bg-blue-600/20 rounded-full blur-md animate-bounce" style={{ animationDelay: '0.5s', animationDuration: '3.5s' }}></div>
           </div>
         </div>
         
-        {/* Floating Particles */}
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div
-            key={i}
-            ref={(el) => {
-              if (el) particleRefs.current[i] = el;
-            }}
-            className="absolute w-2 h-2 bg-gradient-to-r from-primary/60 to-purple-500/60 rounded-full blur-sm -z-10"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-            }}
-          />
-        ))}
-
-        {/* Interactive Cursor Follower */}
-        <div 
-          className="absolute pointer-events-none -z-10 transition-all duration-300"
-          style={{
-            left: mousePosition.x - 50,
-            top: mousePosition.y - 50,
-            opacity: mousePosition.x === 0 ? 0 : 0.3,
-          }}
-        >
-          <div className="w-24 h-24 bg-gradient-to-r from-primary/20 to-purple-500/20 rounded-full blur-xl animate-pulse" />
-        </div>
-
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-gradient-to-r from-blue-400/20 via-black/10 to-blue-600/20 blur-[120px] rounded-full -z-10 opacity-60" />
+        <div className="absolute top-1/4 right-0 w-[300px] h-[300px] bg-gradient-to-l from-blue-500/25 via-black/5 to-blue-300/20 blur-[100px] rounded-full -z-10 opacity-50" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-transparent to-black/10 -z-10" />
+        
         <div className="hero-content relative z-10">
           
-          {/* Interactive Brain Icon */}
-          <div className="mb-8 flex justify-center">
-            <div 
-              className="p-4 bg-gradient-to-br from-primary/10 to-purple-500/10 rounded-full border border-primary/20 group cursor-pointer transition-all duration-500 hover:scale-110 hover:rotate-12"
-              onMouseEnter={() => setIsHovered(true)}
-              onMouseLeave={() => setIsHovered(false)}
-            >
-              <BrainCircuit 
-                className={`h-12 w-12 text-primary transition-all duration-500 ${isHovered ? 'scale-110 rotate-12' : ''}`}
-              />
-              {isHovered && (
-                <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center animate-bounce">
-                  <Sparkles className="h-3 w-3 text-white" />
-                </div>
-              )}
-            </div>
-          </div>
 
           <h1 className="hero-title text-5xl md:text-7xl font-bold tracking-tight mb-8">
             <span className="text-split-main" style={{ opacity: 0 }}>Elevate your learning with AI</span>
@@ -521,75 +540,46 @@ export default function Home() {
             <Button
               asChild
               size="lg"
-              className="hero-button rounded-full px-8 text-lg h-14 shadow-lg shadow-slate-900/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 hover:brightness-110 transition-all duration-200 group overflow-hidden relative"
+              className="hero-button rounded-full px-8 text-lg h-14 shadow-2xl shadow-blue-900/40 bg-gradient-to-r from-blue-600 via-black/20 to-blue-800 hover:from-blue-700 hover:via-black/30 hover:to-blue-900 text-white border-2 border-black/30 dark:border-white/30 transition-all duration-200 hover:shadow-3xl hover:shadow-black/50"
             >
               <Link href="/dashboard" data-testid="button-start-generating">
-                <span className="relative z-10 flex items-center">
-                  Start Free 
-                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </span>
-                <div className="absolute inset-0 bg-gradient-to-r from-primary to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <span className="relative z-10 font-semibold">Start Free</span> <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
             <Button
               asChild
               variant="outline"
               size="lg"
-              className="hero-button rounded-full px-8 text-lg h-14 border border-slate-800 text-slate-900 hover:bg-slate-900 hover:text-white transition-colors duration-200 group"
+              className="hero-button rounded-full px-8 text-lg h-14 border-2 border-black/40 text-black hover:bg-black hover:text-white transition-colors duration-200 bg-white/90 backdrop-blur-sm shadow-xl shadow-black/20 hover:shadow-2xl hover:shadow-black/40"
             >
               <Link href="/pricing" data-testid="button-view-pricing">
-                <MousePointer2 className="mr-2 h-5 w-5 group-hover:rotate-12 transition-transform" />
                 View Pricing
               </Link>
             </Button>
           </div>
 
-          <div className="flex items-center justify-center gap-8 mt-12 text-sm text-muted-foreground">
-            <div className="hero-feature flex items-center gap-2 group cursor-pointer">
-              <CheckCircle2 className="h-4 w-4 text-green-500 group-hover:scale-110 transition-transform" />
-              <span className="group-hover:text-green-600 transition-colors">No credit card required</span>
+          <div className="flex items-center justify-center gap-8 mt-12 text-sm">
+            <div className="hero-feature flex items-center gap-2 bg-black/5 dark:bg-white/5 backdrop-blur-sm px-4 py-3 rounded-full border border-black/20 dark:border-white/20 shadow-lg shadow-black/10 hover:shadow-xl hover:shadow-black/20 transition-all duration-300">
+              <CheckCircle2 className="h-4 w-4 text-blue-500" />
+              <span className="font-medium">No credit card required</span>
             </div>
-            <div className="hero-feature flex items-center gap-2 group cursor-pointer">
-              <CheckCircle2 className="h-4 w-4 text-green-500 group-hover:scale-110 transition-transform" />
-              <span className="group-hover:text-green-600 transition-colors">5 free quizzes</span>
+            <div className="hero-feature flex items-center gap-2 bg-black/5 dark:bg-white/5 backdrop-blur-sm px-4 py-3 rounded-full border border-black/20 dark:border-white/20 shadow-lg shadow-black/10 hover:shadow-xl hover:shadow-black/20 transition-all duration-300">
+              <CheckCircle2 className="h-4 w-4 text-blue-500" />
+              <span className="font-medium">5 free quizzes</span>
             </div>
-            <div className="hero-feature flex items-center gap-2 group cursor-pointer">
-              <CheckCircle2 className="h-4 w-4 text-green-500 group-hover:scale-110 transition-transform" />
-              <span className="group-hover:text-green-600 transition-colors">Cancel anytime</span>
+            <div className="hero-feature flex items-center gap-2 bg-black/5 dark:bg-white/5 backdrop-blur-sm px-4 py-3 rounded-full border border-black/20 dark:border-white/20 shadow-lg shadow-black/10 hover:shadow-xl hover:shadow-black/20 transition-all duration-300">
+              <CheckCircle2 className="h-4 w-4 text-blue-500" />
+              <span className="font-medium">Cancel anytime</span>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Trusted By Section */}
-      <section className="trusted-section border-y border-border/40 bg-slate-50/50 dark:bg-slate-900/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <p className="text-center text-sm text-muted-foreground mb-8 uppercase tracking-wider">Trusted by learners worldwide</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            {[
-              { label: "Quizzes Generated", value: "10,000+", icon: Sparkles },
-              { label: "Active Learners", value: "2,500+", icon: Users },
-              { label: "Topics Covered", value: "Unlimited", icon: BookOpen },
-              { label: "Satisfaction Rate", value: "99.9%", icon: Star },
-            ].map((stat, idx) => (
-              <div 
-                key={idx}
-                className="stat-item flex flex-col items-center"
-              >
-                <stat.icon className="h-6 w-6 text-primary mb-2" />
-                <div className="text-3xl font-bold text-foreground mb-1">{stat.value}</div>
-                <div className="text-sm text-muted-foreground">{stat.label}</div>
-              </div>
-            ))}
           </div>
         </div>
       </section>
 
       {/* How It Works Section */}
-      <section className="how-it-works-section min-h-screen py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col justify-center items-center relative">
+      <section className="how-it-works-section min-h-screen py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col justify-center items-center relative bg-white">
         <div className="how-it-works-title text-center mb-16 absolute top-20 left-0 right-0">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">How Think Stack Works</h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-slate-900 dark:text-white drop-shadow-lg">How Think Stack Works</h2>
+          <p className="text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto drop-shadow-md">
             Create professional quizzes in three simple steps
           </p>
         </div>
@@ -604,20 +594,21 @@ export default function Home() {
               key={idx}
               className={`step-card-${idx + 1} absolute w-full max-w-lg`}
             >
-              <Card className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 text-white border border-slate-800/80 shadow-2xl group hover:shadow-3xl transition-all duration-500">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-white/10 to-transparent opacity-40" />
-                <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-primary/20 to-transparent opacity-40" />
+              <Card className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-50/50 via-white to-blue-100/30 text-slate-900 border-2 border-blue-200/50 shadow-3xl group hover:shadow-4xl hover:shadow-blue-500/30 transition-all duration-500">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-blue-400/30 via-blue-200/20 to-blue-600/20 opacity-80" />
+                <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-blue-500/25 via-blue-300/15 to-blue-100/20 opacity-80" />
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-200/10 via-transparent to-blue-300/15 opacity-30" />
                 
                 <div className="relative z-10 p-10">
                   <div className="flex items-center gap-6 mb-6">
-                    <div className="text-6xl font-bold text-blue-500">{item.step}</div>
-                    <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                      <item.icon className="h-8 w-8 text-primary" />
+                    <div className="text-6xl font-bold text-blue-600 bg-white/30 backdrop-blur-sm rounded-2xl px-4 py-2 border border-blue-300/30 shadow-lg">{item.step}</div>
+                    <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center group-hover:from-blue-600 group-hover:to-blue-700 transition-all duration-500 shadow-2xl shadow-blue-500/30 border border-blue-300/30">
+                      <item.icon className="h-8 w-8 text-white" />
                     </div>
                   </div>
-                  <CardTitle className="text-3xl mb-4 text-white">{item.title}</CardTitle>
+                  <CardTitle className="text-3xl mb-4 text-slate-900 font-bold">{item.title}</CardTitle>
                   <CardContent className="p-0">
-                    <p className="text-xl text-slate-200/90 leading-relaxed">{item.description}</p>
+                    <p className="text-xl text-slate-700 leading-relaxed font-medium">{item.description}</p>
                   </CardContent>
                 </div>
               </Card>
@@ -635,16 +626,16 @@ export default function Home() {
       </section>
 
       {/* Feature Demo Section */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto bg-slate-50/50 dark:bg-slate-900/30 rounded-[3rem] mx-4 lg:mx-auto">
+      <section className="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto bg-white rounded-[3rem] mx-4 lg:mx-auto">
         <div className="grid lg:grid-cols-2 gap-16 items-center max-w-6xl mx-auto">
           <div className="feature-demo-left order-2 lg:order-1 relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary to-purple-500 rounded-3xl blur-2xl opacity-20 transform rotate-3" />
-            <div className="relative bg-card border border-border rounded-3xl p-8 shadow-2xl">
-              <div className="flex items-center gap-4 mb-6 border-b border-border/50 pb-4">
-                <div className="w-3 h-3 rounded-full bg-red-500" />
-                <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                <div className="w-3 h-3 rounded-full bg-green-500" />
-                <span className="text-sm text-muted-foreground ml-auto font-mono"></span>
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500 via-black/10 to-blue-600 rounded-3xl blur-2xl opacity-20 transform rotate-3" />
+            <div className="relative bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm border-2 border-black/20 dark:border-white/20 rounded-3xl p-8 shadow-3xl shadow-black/30">
+              <div className="flex items-center gap-4 mb-6 border-b-2 border-black/20 dark:border-white/20 pb-4">
+                <div className="w-3 h-3 rounded-full bg-blue-500 shadow-lg shadow-black/20" />
+                <div className="w-3 h-3 rounded-full bg-black shadow-lg shadow-blue-500/20" />
+                <div className="w-3 h-3 rounded-full bg-blue-600 shadow-lg shadow-black/20" />
+                <span className="text-sm text-slate-600 dark:text-slate-300 ml-auto font-mono font-semibold bg-black/5 dark:bg-white/5 px-2 py-1 rounded-md border border-black/10 dark:border-white/10"></span>
               </div>
               
               <div className="space-y-4">
@@ -657,12 +648,12 @@ export default function Home() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">Difficulty</label>
                   <div className="grid grid-cols-3 gap-2">
-                    <div className="h-12 bg-green-500/10 border-2 border-green-500 text-green-600 dark:text-green-400 rounded-xl flex items-center justify-center font-medium">Easy</div>
-                    <div className="h-12 bg-primary/10 border border-primary text-primary rounded-xl flex items-center justify-center font-medium">Medium</div>
-                    <div className="h-12 bg-purple-500/10 border border-purple-500 text-purple-600 dark:text-purple-400 rounded-xl flex items-center justify-center font-medium">Hard</div>
+                    <div className="h-12 bg-blue-500/10 border-2 border-blue-500 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center font-medium">Easy</div>
+                    <div className="h-12 bg-sky-500/10 border border-sky-500 text-sky-600 dark:text-sky-400 rounded-xl flex items-center justify-center font-medium">Medium</div>
+                    <div className="h-12 bg-blue-600/10 border border-blue-600 text-blue-700 dark:text-blue-500 rounded-xl flex items-center justify-center font-medium">Hard</div>
                   </div>
                 </div>
-                <Button className="w-full h-14 bg-gradient-to-r from-primary to-purple-600 hover:opacity-90 rounded-xl mt-4 text-lg">
+                <Button className="w-full h-14 bg-gradient-to-r from-blue-500 via-black/20 to-blue-600 hover:from-blue-600 hover:via-black/30 hover:to-blue-700 text-white font-semibold rounded-xl mt-4 border-2 border-black/20 dark:border-white/20 shadow-xl shadow-black/30 transition-all duration-300 hover:shadow-2xl hover:shadow-black/40">
                   <Sparkles className="mr-2 h-5 w-5" /> Generate Quiz
                 </Button>
               </div>
@@ -670,13 +661,13 @@ export default function Home() {
           </div>
 
           <div className="feature-demo-right order-1 lg:order-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400 text-sm font-medium mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-sm font-medium mb-4">
               <Award className="h-4 w-4" />
               <span>Smart Learning</span>
             </div>
             <h2 className="text-3xl md:text-4xl font-bold mb-6">
               Just type a topic. <br />
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-500">AI handles the rest.</span>
+              <span className="text-black dark:text-white">AI handles the rest.</span>
             </h2>
             <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
               Our AI engine analyzes millions of educational resources to create perfectly balanced quizzes tailored to your learning goals.
@@ -692,8 +683,8 @@ export default function Home() {
                   key={i} 
                   className="feature-list-item flex items-center gap-3"
                 >
-                  <div className="h-6 w-6 rounded-full bg-green-500/10 flex items-center justify-center">
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  <div className="h-6 w-6 rounded-full bg-blue-500/10 flex items-center justify-center">
+                    <CheckCircle2 className="h-4 w-4 text-blue-500" />
                   </div>
                   <span className="text-foreground">{item}</span>
                 </li>
@@ -704,10 +695,10 @@ export default function Home() {
       </section>
 
       {/* Features Grid */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <section className="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto bg-white">
         <div className="features-title text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Everything you need to learn faster</h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-slate-900 dark:text-white drop-shadow-lg">Everything you need to learn faster</h2>
+          <p className="text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto drop-shadow-md">
             Powerful features designed for students, teachers, and lifelong learners
           </p>
         </div>
@@ -718,15 +709,16 @@ export default function Home() {
               key={idx}
               className="feature-card"
             >
-              <Card className="h-full border-0 bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-lg hover:shadow-xl transition-shadow rounded-3xl">
-                <CardHeader>
-                  <div className="h-12 w-12 rounded-xl bg-white/10 flex items-center justify-center mb-4">
-                    <feature.icon className="h-6 w-6 text-primary" />
+              <Card className="h-full border-2 border-black/20 dark:border-white/20 bg-gradient-to-br from-white via-blue-50/30 to-slate-100 dark:from-slate-800 dark:via-blue-950/20 dark:to-slate-900 text-slate-900 dark:text-white shadow-2xl hover:shadow-3xl hover:shadow-black/30 transition-all duration-500 rounded-3xl overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-black/5 via-transparent to-black/10 opacity-10" />
+                <CardHeader className="relative z-10 p-6">
+                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-500 via-black/10 to-blue-600 flex items-center justify-center mb-4 shadow-lg shadow-black/20 border border-black/10 dark:border-white/10">
+                    <feature.icon className="h-6 w-6 text-white" />
                   </div>
-                  <CardTitle className="text-lg text-white">{feature.title}</CardTitle>
+                  <CardTitle className="text-lg text-slate-900 dark:text-white font-bold">{feature.title}</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-slate-200/90">{feature.description}</p>
+                <CardContent className="relative z-10 p-6 pt-0">
+                  <p className="text-slate-600 dark:text-slate-200 font-medium leading-relaxed">{feature.description}</p>
                 </CardContent>
               </Card>
             </div>
@@ -735,10 +727,10 @@ export default function Home() {
       </section>
 
       {/* Testimonials */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <section className="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto bg-white">
         <div className="testimonials-title text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Loved by learners everywhere</h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-slate-900 dark:text-white drop-shadow-lg">Loved by learners everywhere</h2>
+          <p className="text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto drop-shadow-md">
             See what our community has to say about Think Stack
           </p>
         </div>
@@ -749,21 +741,22 @@ export default function Home() {
               key={idx}
               className="testimonial-card"
             >
-              <Card className=" bg-gradient-to-br from-slate-900 to-slate-800 rounded-[2.5rem]  text-center text-white relative overflow-hidden hover:shadow-2xl transition-shadow duration-300">
-                <CardContent className="pt-6">
-                  <div className="flex gap-1 mb-4">
+              <Card className="bg-gradient-to-br from-white via-blue-50/30 to-slate-100 dark:from-slate-800 dark:via-blue-950/20 dark:to-slate-900 rounded-[2.5rem] text-center text-slate-900 dark:text-white relative overflow-hidden hover:shadow-3xl hover:shadow-black/30 transition-all duration-500 border-2 border-black/20 dark:border-white/20 shadow-2xl">
+                <div className="absolute inset-0 bg-gradient-to-br from-black/5 via-transparent to-black/10 opacity-10" />
+                <CardContent className="pt-6 relative z-10">
+                  <div className="flex gap-1 mb-4 justify-center">
                     {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                      <Star key={i} className="h-4 w-4 fill-blue-400 text-blue-400 drop-shadow-lg" />
                     ))}
                   </div>
-                  <p className="text-foreground mb-6 leading-relaxed text-white">"{testimonial.content}"</p>
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white font-medium text-sm">
+                  <p className="text-slate-700 dark:text-slate-200 mb-6 leading-relaxed text-lg font-medium">"{testimonial.content}"</p>
+                  <div className="flex items-center gap-3 justify-center">
+                    <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-500 via-black/10 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-black/20 border-2 border-black/20 dark:border-white/20">
                       {testimonial.avatar}
                     </div>
                     <div>
-                      <p className="font-medium text-foreground text-blue-500">{testimonial.name}</p>
-                      <p className="text-sm text-muted-foreground text-blue-500">{testimonial.role}</p>
+                      <p className="font-bold text-slate-900 dark:text-blue-300 text-lg">{testimonial.name}</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-300 font-medium">{testimonial.role}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -776,27 +769,28 @@ export default function Home() {
       {/* FAQ Section moved to dedicated /faq page */}
 
       {/* CTA Section */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8">
-        <div className="cta-section max-w-4xl mx-auto bg-gradient-to-br from-slate-900 to-slate-800 rounded-[2.5rem] p-12 text-center text-white relative overflow-hidden">
-          <div className="absolute -top-24 -right-24 w-64 h-64 bg-primary blur-[100px] rounded-full opacity-40" />
-          <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-purple-500 blur-[100px] rounded-full opacity-40" />
+      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-white">
+        <div className="cta-section max-w-4xl mx-auto bg-gradient-to-br from-slate-800 via-blue-900 to-slate-900 rounded-[2.5rem] p-12 text-center text-white relative overflow-hidden border-3 border-black/30 dark:border-white/30 shadow-3xl shadow-black/50">
+          <div className="absolute -top-24 -right-24 w-64 h-64 bg-gradient-to-br from-blue-600/40 via-black/15 to-blue-800/30 blur-[100px] rounded-full opacity-60" />
+          <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-gradient-to-tl from-blue-700/35 via-black/10 to-blue-500/25 blur-[100px] rounded-full opacity-50" />
+          <div className="absolute inset-0 bg-gradient-to-br from-black/10 via-transparent to-black/20 opacity-30" />
           
           <div className="cta-content relative z-10">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 text-sm font-medium mb-6">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-600/20 border-2 border-black/20 dark:border-white/20 text-blue-200 text-sm font-medium mb-6 shadow-2xl shadow-black/30 backdrop-blur-sm">
               <Clock className="h-4 w-4" />
               <span>Start learning in 60 seconds</span>
             </div>
-            <h2 className="text-3xl md:text-5xl font-bold mb-6">Ready to supercharge your learning?</h2>
-            <p className="text-slate-300 text-lg mb-8 max-w-xl mx-auto">
+            <h2 className="text-3xl md:text-5xl font-bold mb-6 text-white drop-shadow-2xl">Ready to supercharge your learning?</h2>
+            <p className="text-slate-300 text-lg mb-8 max-w-xl mx-auto drop-shadow-lg font-medium">
               Join thousands of learners using AI-powered quizzes. Start with 5 free generations today.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Button asChild size="lg" className="bg-white text-slate-900 hover:bg-slate-100 rounded-full px-8 text-lg h-14">
+              <Button asChild size="lg" className="bg-gradient-to-r from-blue-600 via-black/25 to-blue-700 hover:from-blue-700 hover:via-black/35 hover:to-blue-800 text-white rounded-full px-8 text-lg h-14 border-3 border-black/30 dark:border-white/30 shadow-3xl shadow-black/40 hover:shadow-4xl hover:shadow-black/60 transition-all duration-300 font-bold">
                 <Link href="/api/login" data-testid="button-cta-start">
                   Get Started Free <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="rounded-full px-8 text-lg h-14 border-white/30 text-white hover:bg-white/10">
+              <Button asChild variant="outline" size="lg" className="rounded-full px-8 text-lg h-14 border-3 border-black/40 text-white hover:bg-black/20 hover:text-white transition-colors shadow-2xl shadow-black/30 hover:shadow-3xl hover:shadow-black/50 backdrop-blur-sm font-semibold">
                 <a href="#pricing" data-testid="button-cta-pricing">
                   View Pricing
                 </a>

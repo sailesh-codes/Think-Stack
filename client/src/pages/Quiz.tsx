@@ -82,9 +82,9 @@ export default function Quiz() {
   // Show loading while checking authentication
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-orange-500 mx-auto mb-4" />
+          <Loader2 className="h-8 w-8 animate-spin text-blue-500 mx-auto mb-4" />
           <p className="text-gray-600 dark:text-gray-300">Loading...</p>
         </div>
       </div>
@@ -167,7 +167,7 @@ export default function Quiz() {
     <>
       <div
         ref={containerRef}
-        className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 dark:from-orange-950 dark:via-amber-950 dark:to-orange-900 pt-24"
+        className="min-h-screen bg-white pt-24"
       >
         <div className="max-w-2xl mx-auto">
           {/* Header */}
@@ -190,8 +190,8 @@ export default function Quiz() {
               variant={quizMode === "individual" ? "default" : "outline"}
               className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
                 quizMode === "individual"
-                  ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg"
-                  : "bg-white/80 hover:bg-orange-50 border-orange-200 text-orange-700 hover:border-orange-300"
+                  ? "bg-gradient-to-r from-blue-500 to-sky-500 text-white shadow-lg"
+                  : "bg-white/80 hover:bg-blue-50 border-blue-200 text-blue-700 hover:border-blue-300"
               }`}
             >
               <Target className="mr-2 h-4 w-4" />
@@ -202,8 +202,8 @@ export default function Quiz() {
               variant={quizMode === "organization" ? "default" : "outline"}
               className={`flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
                 quizMode === "organization"
-                  ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg"
-                  : "bg-white/80 hover:bg-orange-50 border-orange-200 text-orange-700 hover:border-orange-300"
+                  ? "bg-gradient-to-r from-blue-500 to-sky-500 text-white shadow-lg"
+                  : "bg-white/80 hover:bg-blue-50 border-blue-200 text-blue-700 hover:border-blue-300"
               }`}
             >
               <Users className="mr-2 h-4 w-4" />
@@ -214,11 +214,11 @@ export default function Quiz() {
           {/* Quiz Generation Form */}
           <Card
             ref={formRef}
-            className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-orange-200/50 dark:border-orange-800/50 shadow-xl"
+            className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-blue-200/50 dark:border-blue-800/50 shadow-xl"
           >
             <CardHeader className="text-center pb-6">
               <CardTitle className="text-2xl font-bold text-gray-800 dark:text-white flex items-center justify-center gap-2">
-                <Lightbulb className="h-6 w-6 text-orange-500" />
+                <Lightbulb className="h-6 w-6 text-blue-500" />
                 {quizMode === "organization" ? "Create Live Quiz Room" : "Generate Quiz"}
               </CardTitle>
               <CardDescription className="text-gray-600 dark:text-gray-300">
@@ -240,7 +240,7 @@ export default function Quiz() {
                     id="topic"
                     {...form.register("topic")}
                     placeholder="e.g., JavaScript, World History, Biology..."
-                    className="h-12 border-orange-200 focus:border-orange-400 focus:ring-orange-400 bg-white/50"
+                    className="h-12 border-blue-200 focus:border-blue-400 focus:ring-blue-400 bg-white/50"
                   />
                   {form.formState.errors.topic && (
                     <p className="text-sm text-red-500">{form.formState.errors.topic.message}</p>
@@ -253,7 +253,7 @@ export default function Quiz() {
                     Difficulty Level
                   </Label>
                   <Select onValueChange={(value) => form.setValue("difficulty", value as any)}>
-                    <SelectTrigger className="h-12 border-orange-200 focus:border-orange-400 focus:ring-orange-400 bg-white/50">
+                    <SelectTrigger className="h-12 border-blue-200 focus:border-blue-400 focus:ring-blue-400 bg-white/50">
                       <SelectValue placeholder="Select difficulty" />
                     </SelectTrigger>
                     <SelectContent>
@@ -270,7 +270,7 @@ export default function Quiz() {
                     Number of Questions
                   </Label>
                   <Select onValueChange={(value) => form.setValue("amount", parseInt(value))}>
-                    <SelectTrigger className="h-12 border-orange-200 focus:border-orange-400 focus:ring-orange-400 bg-white/50">
+                    <SelectTrigger className="h-12 border-blue-200 focus:border-blue-400 focus:ring-blue-400 bg-white/50">
                       <SelectValue placeholder="Select amount" />
                     </SelectTrigger>
                     <SelectContent>
@@ -282,12 +282,12 @@ export default function Quiz() {
                 </div>
 
                 {/* Credits Info */}
-                <div className="bg-orange-50/50 dark:bg-orange-950/20 rounded-xl p-4 border border-orange-200/50 dark:border-orange-800/30">
+                <div className="bg-blue-50/50 dark:bg-blue-950/20 rounded-xl p-4 border border-blue-200/50 dark:border-blue-800/30">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       {quizMode === "organization" ? "Organization Credits" : "Credits"}
                     </span>
-                    <span className="text-sm font-bold text-orange-600">
+                    <span className="text-sm font-bold text-blue-600">
                       {quizMode === "organization"
                         ? (() => {
                             const orgUsed = userData?.usage?.organizationQuizzesGenerated || 0;
@@ -316,8 +316,8 @@ export default function Quiz() {
                   type="submit"
                   className={`w-full h-14 rounded-xl text-lg font-medium transition-all duration-300 ${
                     quizMode === "organization"
-                      ? "bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 shadow-lg hover:shadow-xl hover:shadow-orange-500/25"
-                      : "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-lg hover:shadow-xl hover:shadow-orange-500/25"
+                      ? "bg-gradient-to-r from-blue-500 to-sky-600 hover:from-blue-600 hover:to-sky-700 shadow-lg hover:shadow-xl hover:shadow-blue-500/25"
+                      : "bg-gradient-to-r from-blue-500 to-sky-500 hover:from-blue-600 hover:to-sky-600 shadow-lg hover:shadow-xl hover:shadow-blue-500/25"
                   }`}
                   disabled={generateQuiz.isPending || (quizMode === "organization" ? (!isDevelopment && !isAdminEmail && (userData?.usage?.organizationQuizzesGenerated || 0) >= 3) : !hasCredits)}
                   onClick={() => console.log('Button clicked, isPending:', generateQuiz.isPending)}

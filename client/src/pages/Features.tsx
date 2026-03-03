@@ -48,8 +48,8 @@ export default function Features() {
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-20">
         {features.map((feature, idx) => (
           <div key={idx} className="bg-card border border-border/50 p-8 rounded-2xl hover:shadow-lg transition-shadow">
-            <div className="bg-primary/10 w-12 h-12 rounded-lg flex items-center justify-center mb-6">
-              <feature.icon className="h-6 w-6 text-primary" />
+            <div className="bg-blue-500/10 w-12 h-12 rounded-lg flex items-center justify-center mb-6">
+              <feature.icon className="h-6 w-6 text-blue-500" />
             </div>
             <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
             <p className="text-muted-foreground leading-relaxed">
@@ -60,7 +60,7 @@ export default function Features() {
       </div>
 
       <div className="bg-slate-900 rounded-3xl p-8 md:p-16 text-center text-white relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-purple-600/20 blur-3xl" />
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-sky-500/20 blur-3xl" />
         <div className="relative z-10">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to start learning?</h2>
           <p className="text-slate-300 text-lg mb-8 max-w-2xl mx-auto">

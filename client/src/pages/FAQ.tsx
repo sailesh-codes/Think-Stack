@@ -36,11 +36,11 @@ const faqs = [
 
 export default function FAQ() {
   return (
-    <div className="relative py-24 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
-      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-blue-500/10 via-purple-500/1 0 to-pink-500/10" />
+    <div className="relative py-24 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto bg-white">
+      <div className="absolute inset-0 -z-10 bg-white" />
 
       <div className="text-center mb-12">
-        <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500">
+        <h1 className="text-4xl md:text-5xl font-bold mb-4 text-black dark:text-white">
           Frequently asked questions
         </h1>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -53,7 +53,7 @@ export default function FAQ() {
           <AccordionItem
             key={idx}
             value={`item-${idx}`}
-            className="bg-card/90 border border-border rounded-2xl px-4 sm:px-6 shadow-sm hover:border-purple-500/60 transition-colors"
+            className="bg-card/90 border border-border rounded-2xl px-4 sm:px-6 shadow-sm hover:border-blue-500/60 transition-colors"
           >
             <AccordionTrigger className="text-left hover:no-underline py-5">
               <motion.span

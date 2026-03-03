@@ -74,9 +74,9 @@ export default function QuizPlayer() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 dark:from-orange-950 dark:via-amber-950 dark:to-orange-900">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-orange-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-16 h-16 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-300 animate-pulse">Loading Quiz...</p>
         </div>
       </div>
@@ -85,10 +85,10 @@ export default function QuizPlayer() {
 
   if (!quiz) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 dark:from-orange-950 dark:via-amber-950 dark:to-orange-900">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Quiz Not Found</h2>
-          <Button asChild className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white">
+          <Button asChild className="bg-gradient-to-r from-blue-500 to-sky-500 hover:from-blue-600 hover:to-sky-600 text-white">
             <Link href="/dashboard">Return Home</Link>
           </Button>
         </div>
@@ -138,29 +138,29 @@ export default function QuizPlayer() {
     const percentage = Math.round((score / questions.length) * 100);
 
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 dark:from-orange-950 dark:via-amber-950 dark:to-orange-900">
+      <div className="min-h-screen flex items-center justify-center p-4 bg-white">
         <Card
           ref={resultRef}
-          className="w-full max-w-md p-8 text-center shadow-2xl bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-orange-200/50 dark:border-orange-800/50"
+          className="w-full max-w-md p-8 text-center shadow-2xl bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-blue-200/50 dark:border-blue-800/50"
         >
-          <div className="mb-6 mx-auto w-24 h-24 rounded-full bg-gradient-to-tr from-orange-400 to-amber-500 flex items-center justify-center shadow-lg shadow-orange-500/30">
+          <div className="mb-6 mx-auto w-24 h-24 rounded-full bg-gradient-to-tr from-blue-400 to-sky-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
             <span className="text-4xl font-bold text-white">{percentage}%</span>
           </div>
 
           <h2 className="text-3xl font-bold mb-2 text-gray-800 dark:text-white">Quiz Completed!</h2>
           <p className="text-gray-600 dark:text-gray-300 mb-8">
-            You scored <span className="font-bold text-orange-600">{score}</span> out of <span className="font-bold text-orange-600">{questions.length}</span> correct on <span className="font-semibold text-orange-600">{quiz.topic}</span>.
+            You scored <span className="font-bold text-blue-600">{score}</span> out of <span className="font-bold text-blue-600">{questions.length}</span> correct on <span className="font-semibold text-blue-600">{quiz.topic}</span>.
           </p>
 
           <div className="space-y-3">
-            <Button asChild className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-lg hover:shadow-xl hover:shadow-orange-500/25" size="lg">
+            <Button asChild className="w-full bg-gradient-to-r from-blue-500 to-sky-500 hover:from-blue-600 hover:to-sky-600 text-white shadow-lg hover:shadow-xl hover:shadow-blue-500/25" size="lg">
               <Link href="/dashboard">
                 <Home className="mr-2 h-4 w-4" /> Back to Dashboard
               </Link>
             </Button>
             <Button
               variant="outline"
-              className="w-full border-orange-200 text-orange-700 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-300 dark:hover:bg-orange-950/20"
+              className="w-full border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-950/20"
               onClick={() => window.location.reload()}
             >
               <RotateCcw className="mr-2 h-4 w-4" /> Try Again
@@ -174,14 +174,14 @@ export default function QuizPlayer() {
   return (
     <div
       ref={containerRef}
-      className="min-h-screen flex flex-col items-center justify-center p-4 md:p-8 bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 dark:from-orange-950 dark:via-amber-950 dark:to-orange-900 pt-24"
+      className="min-h-screen flex flex-col items-center justify-center p-4 md:p-8 bg-white pt-24"
     >
       <div className="w-full max-w-2xl">
         <div className="mb-8 flex justify-between items-center">
           <Button
             variant="ghost"
             asChild
-            className="text-orange-600 hover:text-orange-800 hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-950/20 transition-all duration-300"
+            className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/20 transition-all duration-300"
           >
             <Link href="/dashboard">Exit Quiz</Link>
           </Button>
@@ -190,14 +190,14 @@ export default function QuizPlayer() {
               Question {currentIndex + 1} of {questions.length}
             </span>
             <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Score: <span className="font-bold text-orange-600">{score}/{questions.length}</span>
+              Score: <span className="font-bold text-blue-600">{score}/{questions.length}</span>
             </div>
           </div>
         </div>
 
         <Progress
           value={progress}
-          className="h-3 mb-8 bg-orange-100 dark:bg-orange-900/30"
+          className="h-3 mb-8 bg-blue-100 dark:bg-blue-900/30"
         />
 
         <div ref={questionRef}>
@@ -222,9 +222,9 @@ export default function QuizPlayer() {
                   className += "bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 opacity-60";
                 }
               } else if (isSelected) {
-                className += "border-orange-400 ring-2 ring-orange-400/50 bg-orange-50 dark:bg-orange-950/20 shadow-lg shadow-orange-500/20";
+                className += "border-blue-400 ring-2 ring-blue-400/50 bg-blue-50 dark:bg-blue-950/20 shadow-lg shadow-blue-500/20";
               } else {
-                className += "border-orange-200 dark:border-orange-800 hover:border-orange-300 dark:hover:border-orange-700 bg-white/50 dark:bg-gray-900/50 hover:bg-orange-50/30 dark:hover:bg-orange-950/10";
+                className += "border-blue-200 dark:border-blue-800 hover:border-blue-300 dark:hover:border-blue-700 bg-white/50 dark:bg-gray-900/50 hover:bg-blue-50/30 dark:hover:bg-blue-950/10";
               }
 
               return (
@@ -236,7 +236,7 @@ export default function QuizPlayer() {
                   onClick={() => handleOptionSelect(option)}
                   disabled={isAnswered}
                 >
-                  <span className="mr-4 font-mono text-sm opacity-70 bg-orange-100 dark:bg-orange-900/50 px-2 py-1 rounded">{String.fromCharCode(65 + idx)}</span>
+                  <span className="mr-4 font-mono text-sm opacity-70 bg-blue-100 dark:bg-blue-900/50 px-2 py-1 rounded">{String.fromCharCode(65 + idx)}</span>
                   <span className="flex-1 text-left">{option}</span>
                   {isAnswered && isCorrect && <CheckCircle2 className="h-6 w-6 text-emerald-600 ml-3" />}
                   {isAnswered && isSelected && !isCorrect && <XCircle className="h-6 w-6 text-red-500 ml-3" />}
@@ -249,13 +249,13 @@ export default function QuizPlayer() {
         {isAnswered && (
           <div
             ref={explanationRef}
-            className="mt-8 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 p-6 rounded-2xl border-2 border-orange-200/50 dark:border-orange-800/30 shadow-lg"
+            className="mt-8 bg-gradient-to-r from-blue-50 to-sky-50 dark:from-blue-950/20 dark:to-sky-950/20 p-6 rounded-2xl border-2 border-blue-200/50 dark:border-blue-800/30 shadow-lg"
           >
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-3">
-                  <Sparkles className="h-5 w-5 text-orange-500" />
-                  <span className="font-bold text-lg text-orange-700 dark:text-orange-300">Explanation</span>
+                  <Sparkles className="h-5 w-5 text-blue-500" />
+                  <span className="font-bold text-lg text-blue-700 dark:text-blue-300">Explanation</span>
                 </div>
                 <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-base">
                   {currentQuestion.explanation}
@@ -264,7 +264,7 @@ export default function QuizPlayer() {
               <Button
                 onClick={nextQuestion}
                 size="lg"
-                className="ml-6 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-lg hover:shadow-xl hover:shadow-orange-500/25 px-6"
+                className="ml-6 bg-gradient-to-r from-blue-500 to-sky-500 hover:from-blue-600 hover:to-sky-600 text-white shadow-lg hover:shadow-xl hover:shadow-blue-500/25 px-6"
               >
                 {currentIndex + 1 === questions.length ? (
                   <>

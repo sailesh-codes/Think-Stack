@@ -26,11 +26,27 @@ export function useQuiz(id: string) {
     queryFn: async () => {
       const url = buildUrl(api.quizzes.get.path, { id });
       const res = await fetch(url, { credentials: "include" });
+      
+      if (res.status === 401) {
+        // User is not authenticated, redirect to login
+        window.location.href = "/login";
+        throw new Error("Authentication required");
+      }
+      
       if (res.status === 404) return null;
-      if (!res.ok) throw new Error("Failed to fetch quiz");
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('Quiz fetch error:', res.status, errorText);
+        throw new Error(`Failed to fetch quiz (${res.status}): ${errorText}`);
+      }
+      
       return api.quizzes.get.responses[200].parse(await res.json());
     },
     enabled: !!id,
+    retry: false,
+    staleTime: 1000 * 60,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -41,30 +57,45 @@ export function useGenerateQuiz() {
   return useMutation({
     mutationFn: async (data: GenerateQuizInput) => {
       console.log('Mutation function called with data:', data);
-      const res = await fetch(api.quizzes.generate.path, {
-        method: api.quizzes.generate.method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-        credentials: "include",
-      });
+      
+      // Add timeout to prevent infinite loading
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-      console.log('API response status:', res.status);
+      try {
+        const res = await fetch(api.quizzes.generate.path, {
+          method: api.quizzes.generate.method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+          credentials: "include",
+          signal: controller.signal,
+        });
 
-      if (!res.ok) {
-        if (res.status === 402) {
-          const error = errorSchemas.paymentRequired.parse(await res.json());
-          throw new Error(error.message);
+        clearTimeout(timeoutId);
+        console.log('API response status:', res.status);
+
+        if (!res.ok) {
+          if (res.status === 402) {
+            const error = errorSchemas.paymentRequired.parse(await res.json());
+            throw new Error(error.message);
+          }
+          if (res.status === 400) {
+            const error = errorSchemas.validation.parse(await res.json());
+            throw new Error(error.message);
+          }
+          throw new Error(`Failed to generate quiz (${res.status})`);
         }
-        if (res.status === 400) {
-          const error = errorSchemas.validation.parse(await res.json());
-          throw new Error(error.message);
+
+        const result = api.quizzes.generate.responses[201].parse(await res.json());
+        console.log('Parsed result:', result);
+        return result;
+      } catch (error: any) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          throw new Error('Quiz generation timed out. Please try again.');
         }
-        throw new Error("Failed to generate quiz");
+        throw error;
       }
-
-      const result = api.quizzes.generate.responses[201].parse(await res.json());
-      console.log('Parsed result:', result);
-      return result;
     },
     onSuccess: (data) => {
       console.log('Mutation onSuccess called with data:', data);

@@ -11,7 +11,17 @@ import { gsap } from "@/lib/gsap";
 export default function QuizPlayer() {
   const [, params] = useRoute("/quiz/:id");
   const quizId = params?.id || "";
-  const { data: quiz, isLoading } = useQuiz(quizId);
+  const { data: quiz, isLoading, error } = useQuiz(quizId);
+
+  console.log('QuizPlayer - quizId:', quizId);
+  console.log('QuizPlayer - isLoading:', isLoading);
+  console.log('QuizPlayer - quiz:', quiz);
+  console.log('QuizPlayer - error:', error);
+  
+  // Add additional debugging
+  if (quizId && !isLoading && !quiz && !error) {
+    console.log('QuizPlayer - Quiz not found but no error - this might indicate a database issue');
+  }
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
@@ -83,14 +93,78 @@ export default function QuizPlayer() {
     );
   }
 
+  if (error) {
+    // Check if it's an authentication error
+    if (error.message?.includes('Authentication required') || error.message?.includes('401')) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-white">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-orange-600 mb-4">Authentication Required</h2>
+            <p className="text-gray-600 mb-4">Please log in to access this quiz.</p>
+            <Link href="/login">
+              <Button className="bg-blue-500 hover:bg-blue-600 text-white">
+                Go to Login
+              </Button>
+            </Link>
+          </div>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Error Loading Quiz</h2>
+          <p className="text-gray-600 mb-4">{error.message || 'Failed to load quiz. Please try again.'}</p>
+          <div className="space-x-4">
+            <Link href="/quiz">
+              <Button className="bg-blue-500 hover:bg-blue-600 text-white">
+                Create New Quiz
+              </Button>
+            </Link>
+            <Button 
+              variant="outline" 
+              onClick={() => window.location.reload()}
+              className="border-gray-300 text-gray-700 hover:bg-gray-50"
+            >
+              Try Again
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!quiz) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Quiz Not Found</h2>
-          <Button asChild className="bg-gradient-to-r from-blue-500 to-sky-500 hover:from-blue-600 hover:to-sky-600 text-white">
-            <Link href="/dashboard">Return Home</Link>
-          </Button>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Quiz Not Found</h2>
+          <p className="text-gray-600 mb-4">The quiz you're looking for doesn't exist or has been removed.</p>
+          
+          {/* Debug information */}
+          <div className="mt-6 p-4 bg-gray-100 rounded-lg text-left">
+            <h3 className="font-bold text-sm mb-2">Debug Information:</h3>
+            <p className="text-xs text-gray-600">Quiz ID: {quizId}</p>
+            <p className="text-xs text-gray-600">Loading: {isLoading.toString()}</p>
+            <p className="text-xs text-gray-600">Error: {error ? (error as Error).message : 'None'}</p>
+            <p className="text-xs text-gray-600">Quiz Data: {quiz ? 'Present' : 'Null'}</p>
+          </div>
+          
+          <div className="mt-4 space-x-4">
+            <Link href="/quiz">
+              <Button className="bg-blue-500 hover:bg-blue-600 text-white">
+                Create New Quiz
+              </Button>
+            </Link>
+            <Button 
+              variant="outline" 
+              onClick={() => window.location.reload()}
+              className="border-gray-300 text-gray-700 hover:bg-gray-50"
+            >
+              Try Again
+            </Button>
+          </div>
         </div>
       </div>
     );

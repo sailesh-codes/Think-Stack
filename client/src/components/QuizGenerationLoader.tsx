@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Sparkles, Brain, Zap, Target } from "lucide-react";
 import { gsap } from "@/lib/gsap";
 
@@ -12,9 +12,30 @@ export function QuizGenerationLoader({ isGenerating, mode }: QuizGenerationLoade
   const progressRef = useRef<HTMLDivElement>(null);
   const iconsRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
+  const [shouldShow, setShouldShow] = useState(false);
+
+  // Add a delay before showing the loader to prevent flicker
+  useEffect(() => {
+    if (isGenerating) {
+      const showTimer = setTimeout(() => setShouldShow(true), 500);
+      return () => clearTimeout(showTimer);
+    } else {
+      setShouldShow(false);
+    }
+  }, [isGenerating]);
+
+  // Auto-hide after 30 seconds to prevent infinite loading
+  useEffect(() => {
+    if (isGenerating && shouldShow) {
+      const hideTimer = setTimeout(() => {
+        setShouldShow(false);
+      }, 30000);
+      return () => clearTimeout(hideTimer);
+    }
+  }, [isGenerating, shouldShow]);
 
   useEffect(() => {
-    if (!loaderRef.current || !isGenerating) return;
+    if (!loaderRef.current || !isGenerating || !shouldShow) return;
 
     const tl = gsap.timeline();
 
@@ -74,9 +95,9 @@ export function QuizGenerationLoader({ isGenerating, mode }: QuizGenerationLoade
     return () => {
       tl.kill();
     };
-  }, [isGenerating]);
+  }, [isGenerating, shouldShow]);
 
-  if (!isGenerating) return null;
+  if (!isGenerating || !shouldShow) return null;
 
   return (
     <div

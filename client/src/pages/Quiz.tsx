@@ -21,6 +21,9 @@ import { toast } from "sonner";
 import { QuizGenerationLoader } from "@/components/QuizGenerationLoader";
 import { gsap } from "@/lib/gsap";
 import { useModernToast } from "@/components/ModernToastManager";
+import { useLocation } from "wouter";
+import { useQueryClient } from "@tanstack/react-query";
+import { api } from "@shared/routes";
 
 type GenerateFormValues = z.infer<typeof generateQuizSchema>;
 
@@ -31,6 +34,8 @@ export default function Quiz() {
   const [quizMode, setQuizMode] = useState<"individual" | "organization">("individual");
   const [orgQuizzesCreated, setOrgQuizzesCreated] = useState(0);
   const modernToast = useModernToast();
+  const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
 
   // GSAP refs
   const containerRef = useRef<HTMLDivElement>(null);
@@ -125,11 +130,26 @@ export default function Quiz() {
       generateQuiz.mutate({ ...data, isOrganization: true }, {
         onSuccess: (quiz) => {
           console.log('Organization quiz created successfully:', quiz);
+          console.log('Quiz ID:', quiz.id);
+          
           modernToast.success("Live Quiz Room Created!", "Organization quiz created! Share the link to start your live quiz session.");
+          
+          // Ensure quiz ID exists and is valid
+          if (!quiz.id) {
+            console.error('Quiz ID is missing:', quiz);
+            modernToast.error("Quiz Error", "Quiz was created but ID is missing. Please try again.");
+            return;
+          }
+          
           // Redirect to organization quiz room
           const redirectUrl = `/quiz-room/${quiz.id}?creator=${user?.id}`;
           console.log('Redirecting to:', redirectUrl);
-          window.location.href = redirectUrl;
+          
+          // Small delay to ensure toast is shown and auth state is updated
+          setTimeout(() => {
+            queryClient.setQueryData([api.quizzes.get.path, quiz.id], quiz);
+            setLocation(redirectUrl);
+          }, 1000);
         },
         onError: (error) => {
           console.error('Organization quiz creation failed:', error);
@@ -142,11 +162,27 @@ export default function Quiz() {
       generateQuiz.mutate(data, {
         onSuccess: (quiz) => {
           console.log('Individual quiz created successfully:', quiz);
+          console.log('Quiz ID:', quiz.id);
+          console.log('Quiz object:', quiz);
+          
           modernToast.success("Quiz Generated Successfully!", "Individual quiz created! Starting your quiz...");
-          // Redirect to the generated quiz page
+          
+          // Ensure quiz ID exists and is valid
+          if (!quiz.id) {
+            console.error('Quiz ID is missing:', quiz);
+            modernToast.error("Quiz Error", "Quiz was created but ID is missing. Please try again.");
+            return;
+          }
+          
+          // Use setLocation for more reliable navigation
           const redirectUrl = `/quiz/${quiz.id}`;
           console.log('Redirecting to:', redirectUrl);
-          window.location.href = redirectUrl;
+          
+          // Small delay to ensure toast is shown and auth state is updated
+          setTimeout(() => {
+            queryClient.setQueryData([api.quizzes.get.path, quiz.id], quiz);
+            setLocation(redirectUrl);
+          }, 1000);
         },
         onError: (error) => {
           console.error('Individual quiz creation failed:', error);

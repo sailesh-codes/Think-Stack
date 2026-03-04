@@ -43,6 +43,7 @@
     "@types/connect-mongo": "^3.1.2",
     "@types/memoizee": "^0.4.12",
     "@types/pixi.js": "^4.8.9",
+    "animejs": "^4.3.6",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",

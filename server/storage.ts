@@ -175,8 +175,39 @@ export class DatabaseStorage implements IStorage {
     const db = await getDatabase();
     const collection = db.collection('quizzes');
     
-    const quizDoc = await collection.findOne({ id });
-    return quizDoc ? (quizDoc as unknown as Quiz) : undefined;
+    console.log('Looking for quiz with id:', id);
+    
+    // Try to find by id field first, then by _id
+    let quizDoc = await collection.findOne({ id });
+    
+    if (!quizDoc) {
+      // Try finding by _id (in case the id is an ObjectId string)
+      try {
+        quizDoc = await collection.findOne({ _id: new ObjectId(id) });
+      } catch (error) {
+        // Invalid ObjectId format, continue with undefined
+        console.log('Invalid ObjectId format:', id);
+      }
+    }
+    
+    console.log('Quiz found:', quizDoc ? 'Yes' : 'No');
+    
+    if (!quizDoc) return undefined;
+    
+    // Convert MongoDB document to Quiz format
+    const quiz: Quiz = {
+      id: quizDoc.id || quizDoc._id?.toString(),
+      userId: quizDoc.userId,
+      topic: quizDoc.topic,
+      difficulty: quizDoc.difficulty,
+      title: quizDoc.title,
+      questions: quizDoc.questions,
+      isPublic: quizDoc.isPublic || false,
+      isOrganization: quizDoc.isOrganization || false,
+      createdAt: quizDoc.createdAt || new Date()
+    };
+    
+    return quiz;
   }
 
   async getUserQuizzes(userId: string): Promise<Quiz[]> {

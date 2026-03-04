@@ -444,20 +444,52 @@ export async function registerRoutes(
         };
         console.warn("Using mock quiz data - OpenRouter not configured");
       } else {
-        const model = getNextModel();
-        const completion = await openai.chat.completions.create({
-          model,
-          messages: [
-            { role: "system", content: "You are a helpful quiz generator. Output valid JSON only." },
-            { role: "user", content: prompt }
-          ],
-          response_format: { type: "json_object" },
-        });
+        try {
+          const model = getNextModel();
+          console.log(`Using model: ${model}`);
+          
+          const completion = await openai.chat.completions.create({
+            model,
+            messages: [
+              { role: "system", content: "You are a helpful quiz generator. Output valid JSON only." },
+              { role: "user", content: prompt }
+            ],
+            response_format: { type: "json_object" },
+            max_tokens: 2000,
+            temperature: 0.7,
+          });
 
-        const content = completion.choices[0].message.content;
-        if (!content) throw new Error("No content generated");
+          const content = completion.choices[0].message.content;
+          if (!content) throw new Error("No content generated");
 
-        quizData = JSON.parse(content);
+          console.log("AI response received, parsing JSON...");
+          quizData = JSON.parse(content);
+          
+          // Validate the structure
+          if (!quizData.questions || !Array.isArray(quizData.questions)) {
+            throw new Error("Invalid quiz structure: missing questions array");
+          }
+          
+          if (quizData.questions.length !== input.amount) {
+            console.warn(`Expected ${input.amount} questions, got ${quizData.questions.length}`);
+          }
+          
+        } catch (error: any) {
+          console.error("OpenAI API error:", error);
+          
+          // Fallback to mock data on API failure
+          quizData = {
+            title: `${input.topic} Quiz`,
+            questions: Array.from({ length: input.amount }, (_, i) => ({
+              questionText: `Question ${i + 1} about ${input.topic} (${input.difficulty} level)`,
+              options: ["Option A", "Option B", "Option C", "Option D"],
+              correctAnswer: "Option A",
+              explanation: `This is the explanation for question ${i + 1}. The correct answer is Option A.`
+            }))
+          };
+          
+          console.log("Using fallback quiz data due to API error");
+        }
       }
 
       // Save to DB
@@ -481,9 +513,11 @@ export async function registerRoutes(
       // Ensure we return the quiz with the correct ID
       const responseQuiz = {
         ...quiz,
-        id: quiz._id || quiz.id
+        id: quiz.id || quiz._id?.toString()
       };
 
+      console.log('Quiz created with ID:', responseQuiz.id);
+      console.log('Quiz userId:', responseQuiz.userId);
       res.status(201).json(responseQuiz);
 
     } catch (err: any) {
@@ -507,14 +541,28 @@ export async function registerRoutes(
 
   // Get Quiz
   app.get(api.quizzes.get.path, requireAuth, async (req: any, res) => {
-    const quiz = await storage.getQuiz(req.params.id);
-    if (!quiz) return res.status(404).json({ message: "Quiz not found" });
+    const quizId = req.params.id;
+    const userId = req.user.claims.sub;
+    
+    console.log('Get Quiz request - quizId:', quizId, 'userId:', userId);
+    
+    const quiz = await storage.getQuiz(quizId);
+    console.log('Quiz retrieved:', quiz ? 'Found' : 'Not found');
+    
+    if (!quiz) {
+      console.log('Quiz not found, returning 404');
+      return res.status(404).json({ message: "Quiz not found" });
+    }
+    
+    console.log('Quiz userId:', quiz.userId, 'Request userId:', userId);
     
     // Authorization check
-    if (quiz.userId !== req.user.claims.sub && !quiz.isPublic) {
+    if (quiz.userId !== userId && !quiz.isPublic) {
+      console.log('Authorization failed - quiz userId:', quiz.userId, 'request userId:', userId);
       return res.status(403).json({ message: "Forbidden" });
     }
 
+    console.log('Quiz authorized, returning quiz');
     res.json(quiz);
   });
 

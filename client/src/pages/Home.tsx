@@ -10,6 +10,8 @@ import { motion } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 import * as PIXI from 'pixi.js';
 import { gsap } from "@/lib/gsap";
+import { ScrollTrigger } from "@/lib/gsap";
+import UnicornScene from "unicornstudio-react";
 import {
   Accordion,
   AccordionContent,
@@ -17,7 +19,6 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { animations } from "@/lib/gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
@@ -502,14 +503,76 @@ export default function Home() {
   ];
 
   return (
-    <div className="overflow-hidden bg-white min-h-screen">
+    <div className="bg-black relative min-h-screen">
+      {/* Full Page 3D Scene Background */}
+      <div className="absolute inset-0 z-0 overflow-hidden">
+        <style dangerouslySetInnerHTML={{
+          __html: `
+            .unicorn-watermark {
+              display: none !important;
+              visibility: hidden !important;
+              opacity: 0 !important;
+              pointer-events: none !important;
+            }
+            [class*="watermark"], 
+            [class*="brand"], 
+            [class*="logo"],
+            [data-unicorn-watermark] {
+              display: none !important;
+            }
+            canvas {
+              display: block !important;
+              visibility: visible !important;
+              opacity: 1 !important;
+            }
+          `
+        }} />
+        <div 
+          style={{
+            position: 'absolute',
+            top: '0',
+            left: '0',
+            width: '100vw',
+            height: '100vh',
+            opacity: 1,
+            zIndex: 0,
+            backgroundColor: 'transparent'
+          }}
+        >
+          <UnicornScene
+            projectId="eFoWuuHAj4Ru9nPhc12X"
+            width="100%"
+            height="100%"
+            scale={1}
+            dpi={1}
+            sdkUrl="https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@2.1.0-1/dist/unicornStudio.umd.js"
+          />
+          {/* Fallback visual indicator */}
+          <div 
+            style={{
+              position: 'absolute',
+              top: '10px',
+              right: '10px',
+              background: 'rgba(255,255,255,0.1)',
+              padding: '5px 10px',
+              borderRadius: '5px',
+              fontSize: '12px',
+              color: 'white'
+            }}
+          >
+            3D Scene Loading...
+          </div>
+        </div>
+      </div>
+      
       {/* Hero Section */}
-      <section id="home" className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center bg-white">
+      <section id="home" className="relative pt-20 pb-16 lg:pt-32 lg:pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center bg-transparent">
+        
         {/* PIXI.js Animated Background */}
         <div 
           ref={pixiContainerRef}
           className="absolute inset-0 z-0 pointer-events-none"
-          style={{ opacity: 0.8 }}
+          style={{ opacity: 0.2 }}
         >
           {/* CSS Fallback Animation */}
           <div className="absolute inset-0 animate-pulse">
@@ -528,10 +591,10 @@ export default function Home() {
           
 
           <h1 className="hero-title text-5xl md:text-7xl font-bold tracking-tight mb-8">
-            <span className="text-split-main" style={{ opacity: 0 }}>Elevate your learning with AI</span>
+            <span className="text-split-main text-white" style={{ opacity: 0 }}>Elevate your learning with AI</span>
           </h1>
 
-          <p className="hero-description text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
+          <p className="hero-description text-xl text-gray-300 max-w-2xl mx-auto mb-10 leading-relaxed">
             Enter any topic, select difficulty, and let our AI create perfect quizzes instantly. 
             Start with 5 free generations - no credit card required.
           </p>
@@ -540,7 +603,7 @@ export default function Home() {
             <Button
               asChild
               size="lg"
-              className="hero-button rounded-full px-8 text-lg h-14 shadow-2xl shadow-blue-900/40 bg-gradient-to-r from-blue-600 via-black/20 to-blue-800 hover:from-blue-700 hover:via-black/30 hover:to-blue-900 text-white border-2 border-black/30 dark:border-white/30 transition-all duration-200 hover:shadow-3xl hover:shadow-black/50"
+              className="hero-button rounded-full px-8 text-lg h-14 shadow-2xl shadow-blue-500/40 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 hover:from-blue-600 hover:via-blue-700 hover:to-blue-800 text-white border-2 border-blue-400/50 transition-all duration-200 hover:shadow-3xl hover:shadow-blue-500/50"
             >
               <Link href="/dashboard" data-testid="button-start-generating">
                 <span className="relative z-10 font-semibold">Start Free</span> <ArrowRight className="ml-2 h-5 w-5" />
@@ -550,7 +613,7 @@ export default function Home() {
               asChild
               variant="outline"
               size="lg"
-              className="hero-button rounded-full px-8 text-lg h-14 border-2 border-black/40 text-black hover:bg-black hover:text-white transition-colors duration-200 bg-white/90 backdrop-blur-sm shadow-xl shadow-black/20 hover:shadow-2xl hover:shadow-black/40"
+              className="hero-button rounded-full px-8 text-lg h-14 border-2 border-white/40 text-white hover:bg-white hover:text-black transition-colors duration-200 bg-black/10 backdrop-blur-sm shadow-xl shadow-white/10 hover:shadow-2xl hover:shadow-white/20"
             >
               <Link href="/pricing" data-testid="button-view-pricing">
                 View Pricing
@@ -559,27 +622,27 @@ export default function Home() {
           </div>
 
           <div className="flex items-center justify-center gap-8 mt-12 text-sm">
-            <div className="hero-feature flex items-center gap-2 bg-black/5 dark:bg-white/5 backdrop-blur-sm px-4 py-3 rounded-full border border-black/20 dark:border-white/20 shadow-lg shadow-black/10 hover:shadow-xl hover:shadow-black/20 transition-all duration-300">
-              <CheckCircle2 className="h-4 w-4 text-blue-500" />
-              <span className="font-medium">No credit card required</span>
+            <div className="hero-feature flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-3 rounded-full border border-white/20 shadow-lg shadow-white/10 hover:shadow-xl hover:shadow-white/20 transition-all duration-300">
+              <CheckCircle2 className="h-4 w-4 text-blue-400" />
+              <span className="font-medium text-white">No credit card required</span>
             </div>
-            <div className="hero-feature flex items-center gap-2 bg-black/5 dark:bg-white/5 backdrop-blur-sm px-4 py-3 rounded-full border border-black/20 dark:border-white/20 shadow-lg shadow-black/10 hover:shadow-xl hover:shadow-black/20 transition-all duration-300">
-              <CheckCircle2 className="h-4 w-4 text-blue-500" />
-              <span className="font-medium">5 free quizzes</span>
+            <div className="hero-feature flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-3 rounded-full border border-white/20 shadow-lg shadow-white/10 hover:shadow-xl hover:shadow-white/20 transition-all duration-300">
+              <CheckCircle2 className="h-4 w-4 text-blue-400" />
+              <span className="font-medium text-white">5 free quizzes</span>
             </div>
-            <div className="hero-feature flex items-center gap-2 bg-black/5 dark:bg-white/5 backdrop-blur-sm px-4 py-3 rounded-full border border-black/20 dark:border-white/20 shadow-lg shadow-black/10 hover:shadow-xl hover:shadow-black/20 transition-all duration-300">
-              <CheckCircle2 className="h-4 w-4 text-blue-500" />
-              <span className="font-medium">Cancel anytime</span>
+            <div className="hero-feature flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-3 rounded-full border border-white/20 shadow-lg shadow-white/10 hover:shadow-xl hover:shadow-white/20 transition-all duration-300">
+              <CheckCircle2 className="h-4 w-4 text-blue-400" />
+              <span className="font-medium text-white">Cancel anytime</span>
             </div>
           </div>
         </div>
       </section>
 
       {/* How It Works Section */}
-      <section className="how-it-works-section min-h-screen py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col justify-center items-center relative bg-white">
+      <section className="how-it-works-section min-h-screen py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col justify-center items-center relative bg-black">
         <div className="how-it-works-title text-center mb-16 absolute top-20 left-0 right-0">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-slate-900 dark:text-white drop-shadow-lg">How Think Stack Works</h2>
-          <p className="text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto drop-shadow-md">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white drop-shadow-lg">How Think Stack Works</h2>
+          <p className="text-lg text-gray-300 max-w-2xl mx-auto drop-shadow-md">
             Create professional quizzes in three simple steps
           </p>
         </div>
